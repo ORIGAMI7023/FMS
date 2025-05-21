@@ -1,4 +1,5 @@
-﻿using System.Windows;
+using System.Windows;
+using FMS.Client.ViewModels;
 
 namespace FMS.Client.Views
 {

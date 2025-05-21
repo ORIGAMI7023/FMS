@@ -1,37 +1,90 @@
-﻿using System.ComponentModel;
-using System.Net.Http;
+using FMS.Client.Models;
+using FMS.Client.Services;
+using System;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
+using System.Collections.Generic;
+using System.Linq;
 
-public class UploadViewModel : INotifyPropertyChanged
+namespace FMS.Client.ViewModels
 {
-    private RevenueRecord _record = new RevenueRecord();
-    public RevenueRecord Record
+    public class RevenueItem : INotifyPropertyChanged
     {
-        get => _record;
-        set
+        public string Doctor { get; set; }
+
+        private string category;
+        public string Category
         {
-            _record = value;
-            OnPropertyChanged(nameof(Record));
+            get => category;
+            set { category = value; OnPropertyChanged(); }
         }
+
+        public decimal Amount { get; set; }
+
+        public List<string> AllDoctors => UploadViewModel.GlobalDoctors;
+
+        public List<string> Categories =>
+            UploadViewModel.Instance?.DoctorCategoryMap.TryGetValue(Doctor, out var list) == true
+            ? list
+            : new List<string>();
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string name = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
-    public ICommand UploadCommand { get; }
-
-    public UploadViewModel()
+    public class UploadViewModel : INotifyPropertyChanged
     {
-        UploadCommand = new RelayCommand(async () => await UploadAsync());
+        public static List<string> GlobalDoctors { get; private set; }
+        public static UploadViewModel? Instance { get; private set; }
+
+        public DateTime Date { get; set; } = DateTime.Today;
+        public string Remark { get; set; } = string.Empty;
+        public ObservableCollection<RevenueItem> Items { get; set; } = new();
+
+        public Dictionary<string, List<string>> DoctorCategoryMap { get; private set; } = new();
+        public ICommand UploadCommand { get; }
+
+        private readonly ApiService _api = new();
+
+        public UploadViewModel()
+        {
+            Instance = this;
+            LoadConfig();
+            UploadCommand = new RelayCommand(async () =>
+            {
+                var data = new DailyRevenueUploadRequest
+                {
+                    Date = this.Date,
+                    Remark = this.Remark,
+                    Items = Items.Select(i => new Models.RevenueItem
+                    {
+                        Doctor = i.Doctor,
+                        Category = i.Category,
+                        Amount = i.Amount
+                    }).ToList()
+                };
+
+                var result = await _api.UploadDailyDataAsync(data);
+                MessageBox.Show(result ? "上传成功" : "上传失败");
+            });
+        }
+
+        private void LoadConfig()
+        {
+            var json = File.ReadAllText("Config/UploadConfig.json");
+            var config = JsonSerializer.Deserialize<UploadConfig>(json);
+            DoctorCategoryMap = config.医生分类;
+            GlobalDoctors = DoctorCategoryMap.Keys.ToList();
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string name = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
-    private readonly ApiService _api = new();
-
-    private async Task UploadAsync()
-    {
-        bool result = await _api.UploadRevenueAsync(Record);
-        MessageBox.Show(result ? "上传成功" : "上传失败");
-    }
-
-
-    public event PropertyChangedEventHandler PropertyChanged;
-    protected void OnPropertyChanged(string name) =>
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 }

@@ -1,13 +1,18 @@
-﻿using System.Net.Http;
+using FMS.Client.Models;
+using System.Net.Http;
 using System.Net.Http.Json;
+using System.Threading.Tasks;
 
-public class ApiService
+namespace FMS.Client.Services
 {
-    private readonly HttpClient _client = new();
-
-    public async Task<bool> UploadRevenueAsync(RevenueRecord record)
+    public class ApiService
     {
-        var res = await _client.PostAsJsonAsync("https://localhost:7050/api/revenue", record);
-        return res.IsSuccessStatusCode;
+        private readonly HttpClient _client = new();
+
+        public async Task<bool> UploadDailyDataAsync(DailyRevenueUploadRequest data)
+        {
+            var res = await _client.PostAsJsonAsync("https://localhost:7050/api/revenue/daily", data);
+            return res.IsSuccessStatusCode;
+        }
     }
 }
