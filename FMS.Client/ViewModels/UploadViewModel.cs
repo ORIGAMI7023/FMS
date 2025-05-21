@@ -18,6 +18,7 @@ namespace FMS.Client.ViewModels
         public string Doctor { get; set; }
         public string Category { get; set; }
         public decimal Amount { get; set; }
+        public bool IsFirstOfDoctor { get; set; }
 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string name = null)
@@ -72,14 +73,17 @@ namespace FMS.Client.ViewModels
         {
             foreach (var doctor in DoctorCategoryMap)
             {
+                bool first = true;
                 foreach (var category in doctor.Value)
                 {
                     Items.Add(new RevenueItem
                     {
                         Doctor = doctor.Key,
                         Category = category,
-                        Amount = 0
+                        Amount = 0,
+                        IsFirstOfDoctor = first
                     });
+                    first = false;
                 }
             }
         }
