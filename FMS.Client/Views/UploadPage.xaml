@@ -1,7 +1,7 @@
 <Window x:Class="FMS.Client.Views.UploadPage"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="上传营收数据" Height="630" Width="700">
+        Title="上传营收数据" Height="630" Width="700" MinWidth="400" MinHeight="600">
     <Grid Margin="10">
         <StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
@@ -17,7 +17,23 @@
                       CanUserAddRows="False"
                       Height="430"
                       Margin="0,0,0,10"
-                      RowHeaderWidth="0">
+                      RowHeaderWidth="0"
+                      CanUserSortColumns="False">
+                <DataGrid.CellStyle>
+                    <Style TargetType="DataGridCell">
+                        <Setter Property="Background" Value="White"/>
+                        <Setter Property="Foreground" Value="Black"/>
+                        <Setter Property="BorderThickness" Value="0.5"/>
+                        <Style.Triggers>    
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#FFD0E7FF"/>
+                                <!-- 浅蓝 -->
+                                <Setter Property="Foreground" Value="Black"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.CellStyle>
+
                 <DataGrid.RowStyle>
                     <Style TargetType="DataGridRow">
                         <Setter Property="BorderThickness" Value="0,1,0,0"/>
@@ -32,9 +48,9 @@
 
                 </DataGrid.RowStyle>
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="医生" Binding="{Binding Doctor}" Width="2*" />
-                    <DataGridTextColumn Header="分类" Binding="{Binding Category}" Width="2*" />
-                    <DataGridTextColumn Header="金额" Binding="{Binding Amount}" Width="2*" />
+                    <DataGridTextColumn Header="医生" Binding="{Binding Doctor}" Width="80" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="分类" Binding="{Binding Category}" Width="80" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="金额" Binding="{Binding Amount}" Width="*" />
                 </DataGrid.Columns>
             </DataGrid>
             <Button Content="上传" Command="{Binding UploadCommand}" Width="100" HorizontalAlignment="Center"/>
