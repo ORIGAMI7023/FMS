@@ -1,0 +1,6 @@
+@FMS.Server_HostAddress = http://localhost:5008
+
+GET {{FMS.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
