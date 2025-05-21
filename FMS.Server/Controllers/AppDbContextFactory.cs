@@ -13,4 +13,5 @@ namespace FMS.Server.Data
             return new AppDbContext(optionsBuilder.Options);
         }
     }
+
 }
