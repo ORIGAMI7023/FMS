@@ -15,7 +15,7 @@ public class RevenueRecord
 
     public decimal Amount { get; set; }
 
-    public string Department { get; set; }
+    public string? Department { get; set; }
 
     public string Source { get; set; }
 

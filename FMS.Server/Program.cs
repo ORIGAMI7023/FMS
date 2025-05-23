@@ -13,7 +13,7 @@ namespace FMS.Server
             // Add services to the container.
 
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+            builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite("Data Source=fms.db")); // 或者从配置读取连接串
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
