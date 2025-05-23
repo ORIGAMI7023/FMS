@@ -26,9 +26,10 @@ public class ApiService
         if (response.IsSuccessStatusCode)
         {
             var json = await response.Content.ReadAsStringAsync();
-            Console.WriteLine("[DEBUG] 返回JSON: " + json);
+            Console.WriteLine("[DEBUG] API 返回：" + json);  // Debug
             return JsonConvert.DeserializeObject<List<ItemTypeStatistics>>(json);
         }
         return new List<ItemTypeStatistics>();
     }
+
 }

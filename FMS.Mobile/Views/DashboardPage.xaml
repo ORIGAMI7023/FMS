@@ -25,9 +25,8 @@
                     <DataTemplate>
                         <Frame BorderColor="Gray" Margin="5">
                             <VerticalStackLayout>
-                                <Label Text="{Binding Doctor}" FontSize="18" />
-                                <Label Text="{Binding ItemType}" />
-                                <Label Text="{Binding Amount}" />
+                                <Label Text="{Binding itemType}" FontSize="18" />
+                                <Label Text="{Binding totalAmount}" />
                             </VerticalStackLayout>
                         </Frame>
                     </DataTemplate>

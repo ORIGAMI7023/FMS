@@ -1,10 +1,11 @@
+using System;
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FMS.Mobile.Models;
 using FMS.Mobile.Services;
 using Microcharts;
 using SkiaSharp;
-using System.Collections.ObjectModel;
 
 namespace FMS.Mobile.ViewModels;
 
@@ -15,8 +16,9 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<ItemTypeStatistics> records = new();
 
+    // 把 DateOnly 改为 DateTime，初始值为 DateTime.Today
     [ObservableProperty]
-    private DateOnly selectedDate = DateOnly.FromDateTime(DateTime.Today);
+    private DateTime selectedDate = DateTime.Today;
 
     [ObservableProperty]
     private Chart dailyChart;
@@ -29,7 +31,17 @@ public partial class DashboardViewModel : ObservableObject
     [RelayCommand]
     private async Task LoadDataAsync()
     {
-        var data = await _api.GetStatisticsAsync(selectedDate.ToDateTime(TimeOnly.MinValue));
+        // 用 DateTime，直接传给API
+        var data = await _api.GetStatisticsAsync(selectedDate);
+
+        // Debug 输出接口数据数量
+        Console.WriteLine("Loaded records count: " + (data?.Count ?? 0));
+        if (data != null)
+        {
+            foreach (var item in data)
+                Console.WriteLine($"{item.itemType}: {item.totalAmount}");
+        }
+
         Records = new ObservableCollection<ItemTypeStatistics>(data ?? new List<ItemTypeStatistics>());
         BuildChart();
     }
@@ -43,7 +55,6 @@ public partial class DashboardViewModel : ObservableObject
             Color = SKColor.Parse("#6a5acd")
         }).ToList();
 
-        // 增加判空处理
         if (entries == null || entries.Count == 0)
         {
             DailyChart = null;

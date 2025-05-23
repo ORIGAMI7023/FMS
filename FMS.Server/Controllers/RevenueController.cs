@@ -47,22 +47,21 @@ public class RevenueController : ControllerBase
     }
 
     [HttpGet("statistics/monthly")]
-    public async Task<IActionResult> GetMonthlyStatistics([FromQuery] int year)
+    public async Task<IActionResult> GetMonthlyStatistics(int year, int month)
     {
         var result = await _context.RevenueRecords
-            .Where(r => r.Date.Year == year)
-            .GroupBy(r => r.Date.Month)
-            .Select(g => new {
-                Month = g.Key,
-                TotalAmount = g.Sum(x => x.Amount),
-                ByDoctor = g.GroupBy(x => x.Doctor)
-                            .Select(d => new { Doctor = d.Key, Amount = d.Sum(x => x.Amount) })
+            .Where(r => r.Date.Year == year && r.Date.Month == month)
+            .GroupBy(r => r.ItemType)
+            .Select(g => new ItemTypeStatistics
+            {
+                itemType = g.Key,
+                totalAmount = g.Sum(r => r.Amount)
             })
-            .OrderBy(r => r.Month)
             .ToListAsync();
 
         return Ok(result);
     }
+
 
     [HttpPost("import")]
     public async Task<IActionResult> ImportRevenue(IFormFile file)
