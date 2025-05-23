@@ -29,13 +29,13 @@ public partial class DashboardViewModel : ObservableObject
     [RelayCommand]
     private async Task LoadDataAsync()
     {
-        var data = await _api.GetDailyRevenueAsync(SelectedDate);
-        Records = new ObservableCollection<RevenueRecord>(data);
+        var data = await _api.GetStatisticsAsync(selectedDate.ToDateTime(TimeOnly.MinValue));
+        Records = new ObservableCollection<RevenueRecord>((IEnumerable<RevenueRecord>)data);
         BuildChart();
     }
 
     private void BuildChart()
-    {
+    {   
         var entries = Records.Select(r => new ChartEntry((float)r.Amount)
         {
             Label = r.Doctor,

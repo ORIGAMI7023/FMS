@@ -14,10 +14,7 @@ public partial class StatisticsViewModel : ObservableObject
     private ObservableCollection<ItemTypeStatistics> items = new();
 
     [ObservableProperty]
-    private int selectedYear = DateTime.Today.Year;
-
-    [ObservableProperty]
-    private int selectedMonth = DateTime.Today.Month;
+    private DateTime selectedDate = DateTime.Today;
 
     public StatisticsViewModel()
     {
@@ -27,7 +24,7 @@ public partial class StatisticsViewModel : ObservableObject
     [RelayCommand]
     private async Task LoadStatisticsAsync()
     {
-        var list = await _api.GetMonthlyStatisticsAsync(SelectedYear, SelectedMonth);
+        var list = await _api.GetStatisticsAsync(SelectedDate);
         Items = new ObservableCollection<ItemTypeStatistics>(list ?? new List<ItemTypeStatistics>());
     }
 }
