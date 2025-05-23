@@ -45,5 +45,5 @@ Export-FMS-Client.ps1
 Export-FMS-Server.ps1
 Export-FMS-Mobile.ps1
 FMS_Server_Export.zip
-FMS_Client_Code.zip
+FMS_Client_Export.zip
 FMS_Mobile_Export.zip
