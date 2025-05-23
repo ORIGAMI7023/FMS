@@ -1,4 +1,4 @@
-# Visual Studio
+    # Visual Studio
 .vs/
 *.suo
 *.user
@@ -38,3 +38,10 @@ artifacts/
 
 # Others
 *.swp
+
+# 忽略所有导出相关 zip 和脚本
+shell cmd.txt
+Export-FMS-Client.ps1
+Export-FMS-Server.ps1
+FMS_Server_Export.zip
+FMS_Client_Code.zip
