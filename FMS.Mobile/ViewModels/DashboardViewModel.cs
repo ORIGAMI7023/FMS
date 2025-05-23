@@ -46,7 +46,7 @@ public partial class DashboardViewModel : ObservableObject
         // 增加判空处理
         if (entries == null || entries.Count == 0)
         {
-            DailyChart = null; // 或 new BarChart { Entries = new List<ChartEntry>() };
+            DailyChart = null;
             return;
         }
 

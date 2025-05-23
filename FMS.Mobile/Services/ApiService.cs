@@ -9,13 +9,17 @@ public class ApiService
 
     public ApiService()
     {
-        _httpClient = new HttpClient
-        {
-            BaseAddress = new Uri("https://你的服务器地址") // 替换为实际地址
-        };
+#if WINDOWS
+        _httpClient = new HttpClient { BaseAddress = new Uri("http://10.0.2.2:7050") };
+#elif ANDROID
+        _httpClient = new HttpClient { BaseAddress = new Uri("http://192.168.50.203:7050") };
+#else
+        _httpClient = new HttpClient { BaseAddress = new Uri("http://localhost:7050") };
+#endif
     }
 
-    public async Task<List<RevenueRecord>> GetDailyRevenueAsync(DateOnly date)
+    // 原收入明细接口
+    public async Task<List<RevenueRecord>> GetDailyRevenueAsync(DateTime date)
     {
         try
         {
@@ -39,5 +43,37 @@ public class ApiService
         }
 
         return new List<RevenueRecord>();
+    }
+
+    // 新增月度统计接口
+    public async Task<List<ItemTypeStatistics>> GetMonthlyStatisticsAsync(int year, int month)
+    {
+        try
+        {
+            var url = $"/api/revenue/statistics/monthly?year={year}&month={month}";
+            var response = await _httpClient.GetAsync(url);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"[DEBUG] Monthly Statistics: {json}");
+                return JsonConvert.DeserializeObject<List<ItemTypeStatistics>>(json);
+            }
+            else
+            {
+                Console.WriteLine($"[ERROR] HTTP {response.StatusCode}: {response.ReasonPhrase}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[EXCEPTION] {ex.Message}");
+        }
+
+        return new List<ItemTypeStatistics>();
+    }
+
+    internal async Task<IEnumerable<RevenueRecord>> GetDailyRevenueAsync(DateOnly selectedDate)
+    {
+        throw new NotImplementedException();
     }
 }
