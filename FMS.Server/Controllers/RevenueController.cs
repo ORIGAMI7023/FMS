@@ -1,7 +1,10 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Wordprocessing;
 using FMS.Server.Data;
 using FMS.Server.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace FMS.Server.Controllers;
 
@@ -27,9 +30,7 @@ public class RevenueController : ControllerBase
     [HttpGet("query")]
     public async Task<IActionResult> Query([FromQuery] DateOnly date, [FromQuery] string? doctor = null)
     {
-        var start = date.ToDateTime(TimeOnly.MinValue);
-        var end = date.ToDateTime(TimeOnly.MaxValue);
-        var query = _context.RevenueRecords.Where(r => r.Date >= start && r.Date <= end);
+        var query = _context.RevenueRecords.Where(r => r.Date == date);
 
         if (!string.IsNullOrWhiteSpace(doctor))
             query = query.Where(r => r.Doctor == doctor);
@@ -61,5 +62,50 @@ public class RevenueController : ControllerBase
             .ToListAsync();
 
         return Ok(result);
+    }
+
+    [HttpPost("import")]
+    public async Task<IActionResult> ImportRevenue(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("文件为空");
+
+        var records = new List<RevenueRecord>();
+
+        using var stream = file.OpenReadStream();
+        using var workbook = new XLWorkbook(stream);
+        var worksheet = workbook.Worksheet(1);
+
+        foreach (var row in worksheet.RowsUsed().Skip(1))
+        {
+            try
+            {
+                var date = DateOnly.FromDateTime(DateTime.Parse(row.Cell(1).GetString()));
+                var doctor = row.Cell(2).GetString();
+                var department = row.Cell(3).GetString();
+                var itemType = row.Cell(4).GetString();
+                var amount = row.Cell(5).GetValue<decimal>();
+
+                records.Add(new RevenueRecord
+                {
+                    Id = Guid.NewGuid(),
+                    Date = date,
+                    Doctor = doctor,
+                    Department = department,
+                    ItemType = itemType,
+                    Amount = amount,
+                    Source = "Excel"
+                });
+            }
+            catch
+            {
+                // 忽略错误行
+            }
+        }
+
+        await _context.RevenueRecords.AddRangeAsync(records);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "导入成功", count = records.Count });
     }
 }
