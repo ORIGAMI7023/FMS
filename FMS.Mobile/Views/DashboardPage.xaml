@@ -4,10 +4,6 @@
              xmlns:vm="clr-namespace:FMS.Mobile.ViewModels"
              x:Class="FMS.Mobile.Views.DashboardPage">
 
-    <ContentPage.BindingContext>
-        <vm:DashboardViewModel />
-    </ContentPage.BindingContext>
-
     <ScrollView>
         <VerticalStackLayout Spacing="16" Padding="20">
             <Label Text="医生营收 Dashboard" FontSize="24" HorizontalOptions="Center" />

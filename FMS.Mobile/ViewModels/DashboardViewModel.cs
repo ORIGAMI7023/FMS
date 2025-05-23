@@ -2,13 +2,15 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FMS.Mobile.Models;
 using FMS.Mobile.Services;
+using Microcharts;
+using SkiaSharp;
 using System.Collections.ObjectModel;
 
 namespace FMS.Mobile.ViewModels;
 
 public partial class DashboardViewModel : ObservableObject
 {
-    private readonly ApiService _api;
+    private readonly ApiService _api = new();
 
     [ObservableProperty]
     private ObservableCollection<RevenueRecord> records = new();
@@ -16,9 +18,11 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty]
     private DateOnly selectedDate = DateOnly.FromDateTime(DateTime.Today);
 
+    [ObservableProperty]
+    private Chart dailyChart;
+
     public DashboardViewModel()
     {
-        _api = new ApiService();
         LoadDataCommand.Execute(null);
     }
 
@@ -27,5 +31,18 @@ public partial class DashboardViewModel : ObservableObject
     {
         var data = await _api.GetDailyRevenueAsync(SelectedDate);
         Records = new ObservableCollection<RevenueRecord>(data);
+        BuildChart();
+    }
+
+    private void BuildChart()
+    {
+        var entries = Records.Select(r => new ChartEntry((float)r.Amount)
+        {
+            Label = r.Doctor,
+            ValueLabel = r.Amount.ToString("F0"),
+            Color = SKColor.Parse("#6a5acd")
+        }).ToList();
+
+        DailyChart = new BarChart { Entries = entries };
     }
 }
