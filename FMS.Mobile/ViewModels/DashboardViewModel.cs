@@ -43,6 +43,14 @@ public partial class DashboardViewModel : ObservableObject
             Color = SKColor.Parse("#6a5acd")
         }).ToList();
 
+        // 增加判空处理
+        if (entries == null || entries.Count == 0)
+        {
+            DailyChart = null; // 或 new BarChart { Entries = new List<ChartEntry>() };
+            return;
+        }
+
         DailyChart = new BarChart { Entries = entries };
     }
+
 }

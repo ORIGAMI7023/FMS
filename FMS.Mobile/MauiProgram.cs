@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microcharts.Maui;
+using Microsoft.Extensions.Logging;
 
 namespace FMS.Mobile
 {
@@ -8,15 +9,16 @@ namespace FMS.Mobile
         {
             var builder = MauiApp.CreateBuilder();
             builder
-                .UseMauiApp<App>()
-                .ConfigureFonts(fonts =>
-                {
-                    fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-                    fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
-                });
+                   .UseMauiApp<App>()
+                   .UseMicrocharts()
+                   .ConfigureFonts(fonts =>
+                   {
+                       fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+                       fonts.AddFont("OpenSans-SemiBold.ttf", "OpenSansSemiBold");
+                   });
 
 #if DEBUG
-    		builder.Logging.AddDebug();
+            builder.Logging.AddDebug();
 #endif
 
             return builder.Build();

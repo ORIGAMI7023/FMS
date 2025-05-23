@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:microcharts="clr-namespace:Microcharts.Maui;assembly=Microcharts.Maui"
              xmlns:vm="clr-namespace:FMS.Mobile.ViewModels"
              x:Class="FMS.Mobile.Views.DashboardPage">
 
@@ -11,6 +12,14 @@
             <DatePicker Date="{Binding SelectedDate}" />
             <Button Text="刷新" Command="{Binding LoadDataCommand}" />
 
+            <!-- 柱状图控件 -->
+            <microcharts:ChartView Chart="{Binding DailyChart}" HeightRequest="300" />
+
+            <!-- 无数据提示 -->
+            <Label Text="暂无数据" FontSize="16" 
+                   IsVisible="{Binding Records.Count, Converter={StaticResource ZeroToVisibleConverter}}" />
+
+            <!-- 明细表 -->
             <CollectionView ItemsSource="{Binding Records}">
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
