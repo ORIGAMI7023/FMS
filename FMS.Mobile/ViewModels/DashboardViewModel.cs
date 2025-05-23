@@ -13,7 +13,7 @@ public partial class DashboardViewModel : ObservableObject
     private readonly ApiService _api = new();
 
     [ObservableProperty]
-    private ObservableCollection<RevenueRecord> records = new();
+    private ObservableCollection<ItemTypeStatistics> records = new();
 
     [ObservableProperty]
     private DateOnly selectedDate = DateOnly.FromDateTime(DateTime.Today);
@@ -30,16 +30,16 @@ public partial class DashboardViewModel : ObservableObject
     private async Task LoadDataAsync()
     {
         var data = await _api.GetStatisticsAsync(selectedDate.ToDateTime(TimeOnly.MinValue));
-        Records = new ObservableCollection<RevenueRecord>((IEnumerable<RevenueRecord>)data);
+        Records = new ObservableCollection<ItemTypeStatistics>(data ?? new List<ItemTypeStatistics>());
         BuildChart();
     }
 
     private void BuildChart()
-    {   
-        var entries = Records.Select(r => new ChartEntry((float)r.Amount)
+    {
+        var entries = Records.Select(r => new ChartEntry((float)r.totalAmount)
         {
-            Label = r.Doctor,
-            ValueLabel = r.Amount.ToString("F0"),
+            Label = r.itemType,
+            ValueLabel = r.totalAmount.ToString("F0"),
             Color = SKColor.Parse("#6a5acd")
         }).ToList();
 
@@ -52,5 +52,4 @@ public partial class DashboardViewModel : ObservableObject
 
         DailyChart = new BarChart { Entries = entries };
     }
-
 }

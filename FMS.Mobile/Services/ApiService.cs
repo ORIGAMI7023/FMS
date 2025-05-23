@@ -9,6 +9,7 @@ public class ApiService
 
     public ApiService()
     {
+        // 请根据实际IP和端口填写
 #if WINDOWS
         _httpClient = new HttpClient { BaseAddress = new Uri("http://10.0.2.2:7050") };
 #elif ANDROID
@@ -18,7 +19,6 @@ public class ApiService
 #endif
     }
 
-    // 月度统计接口（示例，按实际接口调整参数即可）
     public async Task<List<ItemTypeStatistics>> GetStatisticsAsync(DateTime selectedDate)
     {
         var url = $"/api/revenue/statistics/monthly?year={selectedDate.Year}&month={selectedDate.Month}";
