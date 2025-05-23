@@ -74,6 +74,7 @@ public class ApiService
 
     internal async Task<IEnumerable<RevenueRecord>> GetDailyRevenueAsync(DateOnly selectedDate)
     {
-        throw new NotImplementedException();
+        return Enumerable.Empty<RevenueRecord>();
     }
+
 }

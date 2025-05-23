@@ -28,6 +28,6 @@ public partial class StatisticsViewModel : ObservableObject
     private async Task LoadStatisticsAsync()
     {
         var list = await _api.GetMonthlyStatisticsAsync(SelectedYear, SelectedMonth);
-        Items = new ObservableCollection<ItemTypeStatistics>(list);
+        Items = new ObservableCollection<ItemTypeStatistics>(list ?? new List<ItemTypeStatistics>());
     }
 }
