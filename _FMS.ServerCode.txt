@@ -43,6 +43,10 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Converter\" />
+  </ItemGroup>
+
 </Project>
 
 
@@ -77,7 +81,6 @@ Content-Type: application/json
 
 # --- Program.cs ---
 using FMS.Server.Data;
-using FMS.Server.Converter;
 using Microsoft.EntityFrameworkCore;
 
 namespace FMS.Server
@@ -90,11 +93,6 @@ namespace FMS.Server
 
             // ע
             builder.Services.AddControllers();
-            builder.Services.AddControllers()
-                .AddJsonOptions(options =>
-                {
-                    options.JsonSerializerOptions.Converters.Add(new DateOnlyJsonConverter());
-                });
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddDbContext<AppDbContext>(options =>
@@ -173,6 +171,8 @@ public class RevenueController : ControllerBase
     [HttpPost("import")]
     public async Task<IActionResult> ImportFromJson([FromBody] List<RevenueRecord> records)
     {
+        Console.WriteLine("---- 收到 POST /import 请求，共有记录数：" + records?.Count);
+
         if (records == null || records.Count == 0)
             return BadRequest(new { message = "上传数据为空" });
 
@@ -188,9 +188,7 @@ public class RevenueController : ControllerBase
             await _context.RevenueRecords.AddRangeAsync(records);
             await _context.SaveChangesAsync();
 
-            //return Ok(new { message = "导入成功", count = records.Count });  // 返回导入成功的记录数
-            return NoContent(); // HTTP 204，无正文
-
+            return Ok(new { message = "导入成功", count = records.Count });  // 返回导入成功的记录数
         }
         catch (DbUpdateException ex)
         {
@@ -203,30 +201,6 @@ public class RevenueController : ControllerBase
             return StatusCode(500, new { message = "导入失败", error = ex.Message });
         }
     }
-}
-
-
-# --- Converter\DateOnlyJsonConverter.cs ---
-﻿using System.Text.Json;
-using System.Text.Json.Serialization;
-
-namespace FMS.Server.Converter
-{
-    public class DateOnlyJsonConverter : JsonConverter<DateOnly>
-    {
-        private const string Format = "yyyy-MM-dd";
-
-        public override DateOnly Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            return DateOnly.ParseExact(reader.GetString()!, Format);
-        }
-
-        public override void Write(Utf8JsonWriter writer, DateOnly value, JsonSerializerOptions options)
-        {
-            writer.WriteStringValue(value.ToString(Format));
-        }
-    }
-
 }
 
 

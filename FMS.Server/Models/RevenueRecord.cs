@@ -7,7 +7,7 @@ public class RevenueRecord
     [Key]
     public Guid Id { get; set; }  // 主键
 
-    public DateTime Date { get; set; }  // 日期
+    public DateOnly Date { get; set; }  // 日期
 
     public string Owner { get; set; } = null!;  // 医生名或科室
 

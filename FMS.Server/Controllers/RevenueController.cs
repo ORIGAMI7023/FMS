@@ -19,7 +19,7 @@ public class RevenueController : ControllerBase
     [HttpPost("import")]
     public async Task<IActionResult> ImportFromJson([FromBody] List<RevenueRecord> records)
     {
-        Console.WriteLine("🔥 收到 POST /import 请求，共有记录数：" + records?.Count);
+        //Console.WriteLine("---- 收到 POST /import 请求，共有记录数：" + records?.Count);
 
         if (records == null || records.Count == 0)
             return BadRequest(new { message = "上传数据为空" });
