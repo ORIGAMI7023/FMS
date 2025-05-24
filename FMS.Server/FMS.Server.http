@@ -1,6 +1,26 @@
-@FMS.Server_HostAddress = http://localhost:5008
+@FMS.Server_HostAddress = http://localhost:7050
 
-GET {{FMS.Server_HostAddress}}/weatherforecast/
-Accept: application/json
+### 导入 Revenue 数据
+POST {{FMS.Server_HostAddress}}/api/revenue/import
+Content-Type: application/json
 
-###
+[
+  {
+    "owner": "杨承红",
+    "itemType": "医保",
+    "value": 123.45,
+    "date": "2024-05-01",
+    "isVisitCount": false,
+    "isExcludedFromSummary": false,
+    "source": "Admin"
+  },
+  {
+    "owner": "零药",
+    "itemType": "人次",
+    "value": 456.78,
+    "date": "2024-05-02",
+    "isVisitCount": true,
+    "isExcludedFromSummary": false,
+    "source": "Admin"
+  }
+]

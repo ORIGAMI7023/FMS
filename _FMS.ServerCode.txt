@@ -47,16 +47,37 @@
 
 
 # --- FMS.Server.http ---
-@FMS.Server_HostAddress = http://localhost:5008
+@FMS.Server_HostAddress = http://localhost:7050
 
-GET {{FMS.Server_HostAddress}}/weatherforecast/
-Accept: application/json
+###  Revenue 
+POST {{FMS.Server_HostAddress}}/api/revenue/import
+Content-Type: application/json
 
-###
+[
+  {
+    "owner": "к",
+    "itemType": "ҽ",
+    "value": 123.45,
+    "date": "2024-05-01",
+    "isVisitCount": false,
+    "isExcludedFromSummary": false,
+    "source": "Admin"
+  },
+  {
+    "owner": "ҩ",
+    "itemType": "˴",
+    "value": 456.78,
+    "date": "2024-05-02",
+    "isVisitCount": true,
+    "isExcludedFromSummary": false,
+    "source": "Admin"
+  }
+]
 
 
 # --- Program.cs ---
 using FMS.Server.Data;
+using FMS.Server.Converter;
 using Microsoft.EntityFrameworkCore;
 
 namespace FMS.Server
@@ -69,6 +90,11 @@ namespace FMS.Server
 
             // ע
             builder.Services.AddControllers();
+            builder.Services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.Converters.Add(new DateOnlyJsonConverter());
+                });
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddDbContext<AppDbContext>(options =>
@@ -126,7 +152,7 @@ namespace FMS.Server.Data
 
 
 # --- Controllers\RevenueController.cs ---
-    using ClosedXML.Excel;
+using ClosedXML.Excel;
 using DocumentFormat.OpenXml.Wordprocessing;
 using FMS.Server.Data;
 using FMS.Server.Models;
@@ -142,9 +168,63 @@ public class RevenueController : ControllerBase
 {
     private readonly AppDbContext _context;
 
-    public RevenueController(AppDbContext context)
+    public RevenueController(AppDbContext context) { _context = context; }
+
+    [HttpPost("import")]
+    public async Task<IActionResult> ImportFromJson([FromBody] List<RevenueRecord> records)
     {
-        _context = context;
+        if (records == null || records.Count == 0)
+            return BadRequest(new { message = "上传数据为空" });
+
+        foreach (var record in records)
+        {   
+            record.Id = Guid.NewGuid(); // 生成guid主键
+            if (string.IsNullOrWhiteSpace(record.Source))
+                record.Source = "Admin";  // 如果Soruce字段为空，默认标注来源为Admin
+        }
+
+        try
+        {
+            await _context.RevenueRecords.AddRangeAsync(records);
+            await _context.SaveChangesAsync();
+
+            //return Ok(new { message = "导入成功", count = records.Count });  // 返回导入成功的记录数
+            return NoContent(); // HTTP 204，无正文
+
+        }
+        catch (DbUpdateException ex)
+        {
+            // 数据库更新失败（比如外键、唯一键等问题）
+            return StatusCode(500, new { message = "数据库更新失败", error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            // 其他未处理异常
+            return StatusCode(500, new { message = "导入失败", error = ex.Message });
+        }
+    }
+}
+
+
+# --- Converter\DateOnlyJsonConverter.cs ---
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace FMS.Server.Converter
+{
+    public class DateOnlyJsonConverter : JsonConverter<DateOnly>
+    {
+        private const string Format = "yyyy-MM-dd";
+
+        public override DateOnly Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            return DateOnly.ParseExact(reader.GetString()!, Format);
+        }
+
+        public override void Write(Utf8JsonWriter writer, DateOnly value, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(value.ToString(Format));
+        }
     }
 
 }
@@ -590,17 +670,6 @@ namespace FMS.Server.Migrations
                 });
 #pragma warning restore 612, 618
         }
-    }
-}
-
-
-# --- Models\ItemTypeStatistics.cs ---
-﻿namespace FMS.Server.Models
-{
-    public class ItemTypeStatistics
-    {
-        public string itemType { get; set; }
-        public decimal totalAmount { get; set; }
     }
 }
 

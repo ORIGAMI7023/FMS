@@ -6,7 +6,7 @@ output_file = f"D:\Programing\C#\FMS\_FMS.ServerCode.txt"
 # 选取的源代码/配置/重要脚本文件类型
 target_exts = [".cs", ".json", ".http", ".csproj"]
 # 只保留这些目录下的 .cs 文件
-target_folders = ["Controllers", "Data", "Models", "Migrations"]
+target_folders = ["Controllers", "Data", "Models", "Migrations","Converter"]
 
 with open(output_file, "w", encoding="utf-8") as out:
     for dirpath, _, filenames in os.walk(root_dir):
