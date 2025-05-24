@@ -1,6 +1,6 @@
 @FMS.Server_HostAddress = http://localhost:7050
 
-### 导入 Revenue 数据
+### HttpPost("import") 用于导入收入数据
 POST {{FMS.Server_HostAddress}}/api/revenue/import
 Content-Type: application/json
 
@@ -24,3 +24,17 @@ Content-Type: application/json
     "source": "Admin"
   }
 ]
+
+### HttpGet("query")
+### 查询：2024年1月1日 ~ 1月31日
+GET http://localhost:7050/api/revenue/query?start=2024-01-01&end=2024-01-31
+Accept: application/json
+### 查询：医生为杨承红，时间范围为 2024年1月整月
+GET http://localhost:7050/api/revenue/query?start=2024-01-01&end=2024-01-31&owner=杨承红
+Accept: application/json
+### 查询：所有 Admin 录入的数据（不限制时间）
+GET http://localhost:7050/api/revenue/query?source=Admin
+Accept: application/json
+### 查询：2024年1月的“人次”类数据
+GET http://localhost:7050/api/revenue/query?start=2024-01-01&end=2024-01-31&itemType=人次
+Accept: application/json

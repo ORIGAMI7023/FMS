@@ -16,6 +16,9 @@ public class RevenueController : ControllerBase
 
     public RevenueController(AppDbContext context) { _context = context; }
 
+    /// <summary>
+    /// import接口，用于从JSON格式批量导入收入记录数据。
+    /// </summary>
     [HttpPost("import")]
     public async Task<IActionResult> ImportFromJson([FromBody] List<RevenueRecord> records)
     {
@@ -49,4 +52,42 @@ public class RevenueController : ControllerBase
             return StatusCode(500, new { message = "导入失败", error = ex.Message });
         }
     }
+
+    /// <summary>
+    /// query接口，用于查询收入记录数据。
+    /// </summary>
+    [HttpGet("query")]
+    public async Task<IActionResult> Query(
+    [FromQuery] DateOnly? start = null,
+    [FromQuery] DateOnly? end = null,
+    [FromQuery] string? owner = null,
+    [FromQuery] string? source = null,
+    [FromQuery] string? itemType = null)
+    {
+        var query = _context.RevenueRecords.AsQueryable();
+
+        if (start.HasValue)
+            query = query.Where(r => r.Date >= start.Value);
+
+        if (end.HasValue)
+            query = query.Where(r => r.Date <= end.Value);
+
+        if (!string.IsNullOrWhiteSpace(owner))
+            query = query.Where(r => r.Owner == owner);
+
+        if (!string.IsNullOrWhiteSpace(source))
+            query = query.Where(r => r.Source == source);
+
+        if (!string.IsNullOrWhiteSpace(itemType))
+            query = query.Where(r => r.ItemType == itemType);
+
+        var result = await query
+            .OrderBy(r => r.Date)
+            .ToListAsync();
+
+        return Ok(result);
+    }
+
+
+
 }
