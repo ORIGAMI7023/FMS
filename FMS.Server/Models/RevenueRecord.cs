@@ -5,19 +5,19 @@ namespace FMS.Server.Models;
 public class RevenueRecord
 {
     [Key]
-    public Guid Id { get; set; }
+    public Guid Id { get; set; }  // 主键
 
-    public DateOnly Date { get; set; }
+    public DateOnly Date { get; set; }  // 日期
 
-    public string? Doctor { get; set; }
+    public string Owner { get; set; } = null!;  // 医生名或科室
 
-    public string ItemType { get; set; }
+    public string ItemType { get; set; } = null!;  // 现金、医保、人次等
 
-    public decimal Amount { get; set; }
+    public decimal Value { get; set; }  // 金额或人次
 
-    public string? Department { get; set; }
+    public bool IsVisitCount { get; set; }  // 是否为人次类型数据
 
-    public string Source { get; set; }
+    public bool IsExcludedFromSummary { get; set; }  // 是否从汇总中排除
 
-    public bool IsVisitCount { get; set; }
+    public string Source { get; set; }  // 数据来源（如：Server、Client等）
 }

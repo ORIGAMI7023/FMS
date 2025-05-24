@@ -104,6 +104,7 @@ namespace FMS.Server
 }
 
 
+
 # --- Controllers\AppDbContextFactory.cs ---
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
@@ -146,94 +147,6 @@ public class RevenueController : ControllerBase
         _context = context;
     }
 
-    [HttpPost("upload")]
-    public async Task<IActionResult> Upload([FromBody] List<RevenueRecord> records)
-    {
-        await _context.RevenueRecords.AddRangeAsync(records);
-        await _context.SaveChangesAsync();
-        return Ok(new { message = "上传成功", count = records.Count });
-    }
-
-    [HttpGet("query")]
-    public async Task<IActionResult> Query([FromQuery] DateOnly date, [FromQuery] string? doctor = null)
-    {
-        var query = _context.RevenueRecords.Where(r => r.Date == date);
-
-        if (!string.IsNullOrWhiteSpace(doctor))
-            query = query.Where(r => r.Doctor == doctor);
-
-        var result = await query
-            .GroupBy(r => r.ItemType)
-            .Select(g => new {
-                ItemType = g.Key,
-                TotalAmount = g.Sum(x => x.Amount)
-            })
-            .ToListAsync();
-
-        return Ok(result);
-    }
-
-    [HttpGet("statistics/monthly")]
-    public async Task<IActionResult> GetMonthlyStatistics(int year, int month)
-    {
-        var result = await _context.RevenueRecords
-            .Where(r => r.Date.Year == year && r.Date.Month == month)
-            .GroupBy(r => r.ItemType)
-            .Select(g => new ItemTypeStatistics
-            {
-                itemType = g.Key,
-                totalAmount = g.Sum(r => r.Amount)
-            })
-            .ToListAsync();
-
-        return Ok(result);
-    }
-
-
-    [HttpPost("import")]
-    public async Task<IActionResult> ImportRevenue(IFormFile file)
-    {
-        if (file == null || file.Length == 0)
-            return BadRequest("文件为空");
-
-        var records = new List<RevenueRecord>();
-
-        using var stream = file.OpenReadStream();
-        using var workbook = new XLWorkbook(stream);
-        var worksheet = workbook.Worksheet(1);
-
-        foreach (var row in worksheet.RowsUsed().Skip(1))
-        {
-            try
-            {
-                var date = DateOnly.FromDateTime(DateTime.Parse(row.Cell(1).GetString()));
-                var doctor = row.Cell(2).GetString();
-                var department = row.Cell(3).GetString();
-                var itemType = row.Cell(4).GetString();
-                var amount = row.Cell(5).GetValue<decimal>();
-
-                records.Add(new RevenueRecord
-                {
-                    Id = Guid.NewGuid(),
-                    Date = date,
-                    Doctor = doctor,
-                    Department = department,
-                    ItemType = itemType,
-                    Amount = amount,
-                    Source = "Excel"
-                });
-            }
-            catch
-            {
-                // 忽略错误行
-            }
-        }
-
-        await _context.RevenueRecords.AddRangeAsync(records);
-        await _context.SaveChangesAsync();
-
-        return Ok(new { message = "导入成功", count = records.Count });
-    }
 }
 
 
@@ -485,6 +398,142 @@ namespace FMS.Server.Migrations
 }
 
 
+# --- Migrations\20250524133635_RebuildRevenueStructure.cs ---
+﻿using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace FMS.Server.Migrations
+{
+    /// <inheritdoc />
+    public partial class RebuildRevenueStructure : Migration
+    {
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropColumn(
+                name: "Department",
+                table: "RevenueRecords");
+
+            migrationBuilder.DropColumn(
+                name: "Doctor",
+                table: "RevenueRecords");
+
+            migrationBuilder.RenameColumn(
+                name: "Amount",
+                table: "RevenueRecords",
+                newName: "Value");
+
+            migrationBuilder.AddColumn<bool>(
+                name: "IsExcludedFromSummary",
+                table: "RevenueRecords",
+                type: "INTEGER",
+                nullable: false,
+                defaultValue: false);
+
+            migrationBuilder.AddColumn<string>(
+                name: "Owner",
+                table: "RevenueRecords",
+                type: "TEXT",
+                nullable: false,
+                defaultValue: "");
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropColumn(
+                name: "IsExcludedFromSummary",
+                table: "RevenueRecords");
+
+            migrationBuilder.DropColumn(
+                name: "Owner",
+                table: "RevenueRecords");
+
+            migrationBuilder.RenameColumn(
+                name: "Value",
+                table: "RevenueRecords",
+                newName: "Amount");
+
+            migrationBuilder.AddColumn<string>(
+                name: "Department",
+                table: "RevenueRecords",
+                type: "TEXT",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "Doctor",
+                table: "RevenueRecords",
+                type: "TEXT",
+                nullable: true);
+        }
+    }
+}
+
+
+# --- Migrations\20250524133635_RebuildRevenueStructure.Designer.cs ---
+﻿// <auto-generated />
+using System;
+using FMS.Server.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+
+#nullable disable
+
+namespace FMS.Server.Migrations
+{
+    [DbContext(typeof(AppDbContext))]
+    [Migration("20250524133635_RebuildRevenueStructure")]
+    partial class RebuildRevenueStructure
+    {
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        {
+#pragma warning disable 612, 618
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.5");
+
+            modelBuilder.Entity("FMS.Server.Models.RevenueRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsExcludedFromSummary")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsVisitCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ItemType")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Owner")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Value")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("RevenueRecords");
+                });
+#pragma warning restore 612, 618
+        }
+    }
+}
+
+
 # --- Migrations\AppDbContextModelSnapshot.cs ---
 ﻿// <auto-generated />
 using System;
@@ -511,17 +560,11 @@ namespace FMS.Server.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("TEXT");
-
                     b.Property<DateOnly>("Date")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Department")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Doctor")
-                        .HasColumnType("TEXT");
+                    b.Property<bool>("IsExcludedFromSummary")
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsVisitCount")
                         .HasColumnType("INTEGER");
@@ -530,8 +573,15 @@ namespace FMS.Server.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Owner")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Source")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Value")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -563,19 +613,19 @@ namespace FMS.Server.Models;
 public class RevenueRecord
 {
     [Key]
-    public Guid Id { get; set; }
+    public Guid Id { get; set; }  // 
 
-    public DateOnly Date { get; set; }
+    public DateOnly Date { get; set; }  // 
 
-    public string? Doctor { get; set; }
+    public string Owner { get; set; } = null!;  // ҽ
 
-    public string ItemType { get; set; }
+    public string ItemType { get; set; } = null!;  // ֽҽ˴ε
 
-    public decimal Amount { get; set; }
+    public decimal Value { get; set; }  // ˴
 
-    public string? Department { get; set; }
+    public bool IsVisitCount { get; set; }  // ǷΪ˴
 
-    public string Source { get; set; }
+    public bool IsExcludedFromSummary { get; set; }  // Ƿӻų
 
-    public bool IsVisitCount { get; set; }
+    public string Source { get; set; }  // Դ磺ServerClientȣ
 }
