@@ -12,26 +12,11 @@
             <DatePicker Date="{Binding SelectedDate}" />
             <Button Text="刷新" Command="{Binding LoadDataCommand}" />
 
-            <!-- 柱状图控件 -->
             <microcharts:ChartView Chart="{Binding DailyChart}" HeightRequest="300" />
+            <Label Text="金额统计" FontSize="16" HorizontalOptions="Center" Margin="0,10"/>
 
-            <!-- 无数据提示 -->
-            <Label Text="暂无数据" FontSize="16" 
-                   IsVisible="{Binding Records.Count, Converter={StaticResource ZeroToVisibleConverter}}" />
-
-            <!-- 明细表 -->
-            <CollectionView ItemsSource="{Binding Records}">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <Frame BorderColor="Gray" Margin="5">
-                            <VerticalStackLayout>
-                                <Label Text="{Binding itemType}" FontSize="18" />
-                                <Label Text="{Binding totalAmount}" />
-                            </VerticalStackLayout>
-                        </Frame>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
+            <microcharts:ChartView Chart="{Binding DailyVisitCountChart}" HeightRequest="300" />
+            <Label Text="人次统计" FontSize="16" HorizontalOptions="Center" Margin="0,10"/>
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

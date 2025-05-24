@@ -53,7 +53,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net8.0-android;net8.0-ios;net8.0-maccatalyst</TargetFrameworks>
+		<TargetFrameworks>net8.0-android</TargetFrameworks>
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net8.0-windows10.0.19041.0</TargetFrameworks>
 		<!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
 		<!-- <TargetFrameworks>$(TargetFrameworks);net8.0-tizen</TargetFrameworks> -->
@@ -82,12 +82,9 @@
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 		<ApplicationVersion>1</ApplicationVersion>
 
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">11.0</SupportedOSPlatformVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">13.1</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
-		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -175,28 +172,29 @@ public class ZeroToVisibleConverter : IValueConverter
 }
 
 
-# --- Models\ItemTypeStatistics.cs ---
+# --- Models\MonthlyAmountStatistics.cs ---
+
 namespace FMS.Mobile.Models;
 
-public class ItemTypeStatistics
+public class MonthlyAmountStatistics
 {
-    public string itemType { get; set; }
-    public decimal totalAmount { get; set; }
-}
-
-# --- Models\RevenueRecord.cs ---
-namespace FMS.Mobile.Models;
-
-public class RevenueRecord
-{
-    public Guid Id { get; set; }
-    public DateTime Date { get; set; }
-    public string Doctor { get; set; }
-    public string Department { get; set; }
+    public string Owner { get; set; }
     public string ItemType { get; set; }
-    public decimal Amount { get; set; }
-    public string Source { get; set; }
+    public decimal TotalAmount { get; set; }
 }
+
+
+# --- Models\MonthlyVisitCountStatistics.cs ---
+
+namespace FMS.Mobile.Models;
+
+public class MonthlyVisitCountStatistics
+{
+    public string Owner { get; set; }
+    public string ItemType { get; set; }
+    public decimal TotalCount { get; set; }
+}
+
 
 # --- Platforms\Android\AndroidManifest.xml ---
 ﻿<?xml version="1.0" encoding="utf-8"?>
@@ -257,200 +255,6 @@ namespace FMS.Mobile
 <network-security-config>
 	<base-config cleartextTrafficPermitted="true" />
 </network-security-config>
-
-# --- Platforms\iOS\AppDelegate.cs ---
-﻿using Foundation;
-
-namespace FMS.Mobile
-{
-    [Register("AppDelegate")]
-    public class AppDelegate : MauiUIApplicationDelegate
-    {
-        protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
-    }
-}
-
-
-# --- Platforms\iOS\Info.plist ---
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<key>UIDeviceFamily</key>
-	<array>
-		<integer>1</integer>
-		<integer>2</integer>
-	</array>
-	<key>UIRequiredDeviceCapabilities</key>
-	<array>
-		<string>arm64</string>
-	</array>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>XSAppIconAssets</key>
-	<string>Assets.xcassets/appicon.appiconset</string>
-</dict>
-</plist>
-
-
-# --- Platforms\iOS\Program.cs ---
-﻿using ObjCRuntime;
-using UIKit;
-
-namespace FMS.Mobile
-{
-    public class Program
-    {
-        // This is the main entry point of the application.
-        static void Main(string[] args)
-        {
-            // if you want to use a different Application Delegate class from "AppDelegate"
-            // you can specify it here.
-            UIApplication.Main(args, null, typeof(AppDelegate));
-        }
-    }
-}
-
-
-# --- Platforms\MacCatalyst\AppDelegate.cs ---
-﻿using Foundation;
-
-namespace FMS.Mobile
-{
-    [Register("AppDelegate")]
-    public class AppDelegate : MauiUIApplicationDelegate
-    {
-        protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
-    }
-}
-
-
-# --- Platforms\MacCatalyst\Entitlements.plist ---
-﻿<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-    <!-- See https://aka.ms/maui-publish-app-store#add-entitlements for more information about adding entitlements.-->
-    <dict>
-        <!-- App Sandbox must be enabled to distribute a MacCatalyst app through the Mac App Store. -->
-        <key>com.apple.security.app-sandbox</key>
-        <true/>
-        <!-- When App Sandbox is enabled, this value is required to open outgoing network connections. -->
-        <key>com.apple.security.network.client</key>
-        <true/>
-    </dict>
-</plist>
-
-
-
-# --- Platforms\MacCatalyst\Info.plist ---
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <!-- The Mac App Store requires you specify if the app uses encryption. -->
-    <!-- Please consult https://developer.apple.com/documentation/bundleresources/information_property_list/itsappusesnonexemptencryption -->
-    <!-- <key>ITSAppUsesNonExemptEncryption</key> -->
-    <!-- Please indicate <true/> or <false/> here. -->
-
-    <!-- Specify the category for your app here. -->
-    <!-- Please consult https://developer.apple.com/documentation/bundleresources/information_property_list/lsapplicationcategorytype -->
-    <!-- <key>LSApplicationCategoryType</key> -->
-    <!-- <string>public.app-category.YOUR-CATEGORY-HERE</string> -->
-	<key>UIDeviceFamily</key>
-	<array>
-		<integer>2</integer>
-	</array>
-	<key>UIRequiredDeviceCapabilities</key>
-	<array>
-		<string>arm64</string>
-	</array>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>XSAppIconAssets</key>
-	<string>Assets.xcassets/appicon.appiconset</string>
-</dict>
-</plist>
-
-
-# --- Platforms\MacCatalyst\Program.cs ---
-﻿using ObjCRuntime;
-using UIKit;
-
-namespace FMS.Mobile
-{
-    public class Program
-    {
-        // This is the main entry point of the application.
-        static void Main(string[] args)
-        {
-            // if you want to use a different Application Delegate class from "AppDelegate"
-            // you can specify it here.
-            UIApplication.Main(args, null, typeof(AppDelegate));
-        }
-    }
-}
-
-
-# --- Platforms\Tizen\Main.cs ---
-using Microsoft.Maui;
-using Microsoft.Maui.Hosting;
-using System;
-
-namespace FMS.Mobile
-{
-    internal class Program : MauiApplication
-    {
-        protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
-
-        static void Main(string[] args)
-        {
-            var app = new Program();
-            app.Run(args);
-        }
-    }
-}
-
-
-# --- Platforms\Tizen\tizen-manifest.xml ---
-﻿<?xml version="1.0" encoding="utf-8"?>
-<manifest package="maui-application-id-placeholder" version="0.0.0" api-version="8" xmlns="http://tizen.org/ns/packages">
-  <profile name="common" />
-  <ui-application appid="maui-application-id-placeholder" exec="FMS.Mobile.dll" multiple="false" nodisplay="false" taskmanage="true" type="dotnet" launch_mode="single">
-    <label>maui-application-title-placeholder</label>
-    <icon>maui-appicon-placeholder</icon>
-    <metadata key="http://tizen.org/metadata/prefer_dotnet_aot" value="true" />
-  </ui-application>
-  <shortcut-list />
-  <privileges>
-    <privilege>http://tizen.org/privilege/internet</privilege>
-  </privileges> 
-  <dependencies />
-  <provides-appdefined-privileges />
-</manifest>
 
 # --- Platforms\Windows\App.xaml ---
 ﻿<maui:MauiWinUIApplication
@@ -1005,6 +809,7 @@ namespace FMS.Mobile.WinUI
 
 
 # --- Services\ApiService.cs ---
+
 using FMS.Mobile.Models;
 using Newtonsoft.Json;
 
@@ -1016,7 +821,6 @@ public class ApiService
 
     public ApiService()
     {
-        // 请根据实际IP和端口填写
 #if WINDOWS
         _httpClient = new HttpClient { BaseAddress = new Uri("http://10.0.2.2:7050") };
 #elif ANDROID
@@ -1026,24 +830,32 @@ public class ApiService
 #endif
     }
 
-    public async Task<List<ItemTypeStatistics>> GetStatisticsAsync(DateTime selectedDate)
+    public async Task<List<MonthlyAmountStatistics>> GetMonthlyAmountStatisticsAsync(int year, int month)
     {
-        var url = $"/api/revenue/statistics/monthly?year={selectedDate.Year}&month={selectedDate.Month}";
-        var response = await _httpClient.GetAsync(url);
+        var response = await _httpClient.GetAsync($"/api/revenue/statistics/monthly/amount?year={year}&month={month}");
         if (response.IsSuccessStatusCode)
         {
             var json = await response.Content.ReadAsStringAsync();
-            Console.WriteLine("[DEBUG] API 返回：" + json);  // Debug
-            return JsonConvert.DeserializeObject<List<ItemTypeStatistics>>(json);
+            return JsonConvert.DeserializeObject<List<MonthlyAmountStatistics>>(json);
         }
-        return new List<ItemTypeStatistics>();
+        return new List<MonthlyAmountStatistics>();
     }
 
+    public async Task<List<MonthlyVisitCountStatistics>> GetMonthlyVisitCountStatisticsAsync(int year, int month)
+    {
+        var response = await _httpClient.GetAsync($"/api/revenue/statistics/monthly/visitcount?year={year}&month={month}");
+        if (response.IsSuccessStatusCode)
+        {
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonConvert.DeserializeObject<List<MonthlyVisitCountStatistics>>(json);
+        }
+        return new List<MonthlyVisitCountStatistics>();
+    }
 }
 
 
 # --- ViewModels\DashboardViewModel.cs ---
-using System;
+
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -1059,59 +871,94 @@ public partial class DashboardViewModel : ObservableObject
     private readonly ApiService _api = new();
 
     [ObservableProperty]
-    private ObservableCollection<ItemTypeStatistics> records = new();
+    private ObservableCollection<MonthlyAmountStatistics> amountRecords = new();
 
-    //  DateOnly Ϊ DateTimeʼֵΪ DateTime.Today
+    [ObservableProperty]
+    private ObservableCollection<MonthlyVisitCountStatistics> visitCountRecords = new();
+
     [ObservableProperty]
     private DateTime selectedDate = DateTime.Today;
 
     [ObservableProperty]
     private Chart dailyChart;
 
+    [ObservableProperty]
+    private Chart dailyVisitCountChart;
+
     public DashboardViewModel()
     {
-        LoadDataCommand.Execute(null);
+        // 初始不加载数据
     }
 
     [RelayCommand]
     private async Task LoadDataAsync()
     {
-        //  DateTimeֱӴAPI
-        var data = await _api.GetStatisticsAsync(selectedDate);
-
-        // Debug ӿ
-        Console.WriteLine("Loaded records count: " + (data?.Count ?? 0));
-        if (data != null)
+        try
         {
-            foreach (var item in data)
-                Console.WriteLine($"{item.itemType}: {item.totalAmount}");
-        }
+            var amountData = await _api.GetMonthlyAmountStatisticsAsync(SelectedDate.Year, SelectedDate.Month);
+            AmountRecords = new ObservableCollection<MonthlyAmountStatistics>(amountData ?? new List<MonthlyAmountStatistics>());
 
-        Records = new ObservableCollection<ItemTypeStatistics>(data ?? new List<ItemTypeStatistics>());
-        BuildChart();
+            var visitCountData = await _api.GetMonthlyVisitCountStatisticsAsync(SelectedDate.Year, SelectedDate.Month);
+            VisitCountRecords = new ObservableCollection<MonthlyVisitCountStatistics>(visitCountData ?? new List<MonthlyVisitCountStatistics>());
+
+            BuildAmountChart();
+            BuildVisitCountChart();
+        }
+        catch (Exception ex)
+        {
+            await Application.Current.MainPage.DisplayAlert("提示", "从服务器获取数据失败，已使用默认空图表。", "确定");
+
+            AmountRecords = new ObservableCollection<MonthlyAmountStatistics>();
+            VisitCountRecords = new ObservableCollection<MonthlyVisitCountStatistics>();
+            BuildAmountChart(true);
+            BuildVisitCountChart(true);
+        }
     }
 
-    private void BuildChart()
+    private void BuildAmountChart(bool isFallback = false)
     {
-        var entries = Records.Select(r => new ChartEntry((float)r.totalAmount)
-        {
-            Label = r.itemType,
-            ValueLabel = r.totalAmount.ToString("F0"),
-            Color = SKColor.Parse("#6a5acd")
-        }).ToList();
-
-        if (entries == null || entries.Count == 0)
+        if ((AmountRecords == null || AmountRecords.Count == 0) && !isFallback)
         {
             DailyChart = null;
             return;
         }
 
+        var entries = (isFallback ? new List<ChartEntry> {
+            new ChartEntry(0) { Label = "无数据", ValueLabel = "0", Color = SKColor.Parse("#cccccc") }
+        } : AmountRecords.Select(r => new ChartEntry((float)r.TotalAmount)
+        {
+            Label = $"{r.Owner}-{r.ItemType}",
+            ValueLabel = r.TotalAmount.ToString("F0"),
+            Color = SKColor.Parse("#6a5acd")
+        }).ToList());
+
         DailyChart = new BarChart { Entries = entries };
+    }
+
+    private void BuildVisitCountChart(bool isFallback = false)
+    {
+        if ((VisitCountRecords == null || VisitCountRecords.Count == 0) && !isFallback)
+        {
+            DailyVisitCountChart = null;
+            return;
+        }
+
+        var entries = (isFallback ? new List<ChartEntry> {
+            new ChartEntry(0) { Label = "无数据", ValueLabel = "0", Color = SKColor.Parse("#cccccc") }
+        } : VisitCountRecords.Select(r => new ChartEntry((float)r.TotalCount)
+        {
+            Label = $"{r.Owner}-{r.ItemType}",
+            ValueLabel = r.TotalCount.ToString("F0"),
+            Color = SKColor.Parse("#ff6347")
+        }).ToList());
+
+        DailyVisitCountChart = new BarChart { Entries = entries };
     }
 }
 
 
 # --- ViewModels\StatisticsViewModel.cs ---
+
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FMS.Mobile.Models;
@@ -1125,7 +972,7 @@ public partial class StatisticsViewModel : ObservableObject
     private readonly ApiService _api = new();
 
     [ObservableProperty]
-    private ObservableCollection<ItemTypeStatistics> items = new();
+    private ObservableCollection<MonthlyAmountStatistics> items = new();
 
     [ObservableProperty]
     private DateTime selectedDate = DateTime.Today;
@@ -1138,8 +985,8 @@ public partial class StatisticsViewModel : ObservableObject
     [RelayCommand]
     private async Task LoadStatisticsAsync()
     {
-        var list = await _api.GetStatisticsAsync(SelectedDate);
-        Items = new ObservableCollection<ItemTypeStatistics>(list ?? new List<ItemTypeStatistics>());
+        var list = await _api.GetMonthlyAmountStatisticsAsync(SelectedDate.Year, SelectedDate.Month);
+        Items = new ObservableCollection<MonthlyAmountStatistics>(list ?? new List<MonthlyAmountStatistics>());
     }
 }
 
@@ -1159,29 +1006,15 @@ public partial class StatisticsViewModel : ObservableObject
             <DatePicker Date="{Binding SelectedDate}" />
             <Button Text="刷新" Command="{Binding LoadDataCommand}" />
 
-            <!-- 柱状图控件 -->
             <microcharts:ChartView Chart="{Binding DailyChart}" HeightRequest="300" />
+            <Label Text="金额统计" FontSize="16" HorizontalOptions="Center" Margin="0,10"/>
 
-            <!-- 无数据提示 -->
-            <Label Text="暂无数据" FontSize="16" 
-                   IsVisible="{Binding Records.Count, Converter={StaticResource ZeroToVisibleConverter}}" />
-
-            <!-- 明细表 -->
-            <CollectionView ItemsSource="{Binding Records}">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <Frame BorderColor="Gray" Margin="5">
-                            <VerticalStackLayout>
-                                <Label Text="{Binding itemType}" FontSize="18" />
-                                <Label Text="{Binding totalAmount}" />
-                            </VerticalStackLayout>
-                        </Frame>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
+            <microcharts:ChartView Chart="{Binding DailyVisitCountChart}" HeightRequest="300" />
+            <Label Text="人次统计" FontSize="16" HorizontalOptions="Center" Margin="0,10"/>
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>
+
 
 # --- Views\DashboardPage.xaml.cs ---
 ﻿using FMS.Mobile.ViewModels;
@@ -1211,7 +1044,7 @@ public partial class DashboardPage : ContentPage
 
     <ScrollView>
         <VerticalStackLayout Spacing="16" Padding="20">
-            <Label Text="项目收入统计" FontSize="24" HorizontalOptions="Center" />
+            <Label Text="项目金额统计" FontSize="24" HorizontalOptions="Center" />
 
             <DatePicker Date="{Binding SelectedDate}" />
             <Button Text="刷新" Command="{Binding LoadStatisticsCommand}" />
@@ -1221,8 +1054,9 @@ public partial class DashboardPage : ContentPage
                     <DataTemplate>
                         <Frame BorderColor="Gray" Margin="5">
                             <VerticalStackLayout>
-                                <Label Text="{Binding itemType}" FontSize="18" />
-                                <Label Text="{Binding totalAmount}" />
+                                <Label Text="{Binding Owner}" FontSize="18" />
+                                <Label Text="{Binding ItemType}" />
+                                <Label Text="{Binding TotalAmount}" />
                             </VerticalStackLayout>
                         </Frame>
                     </DataTemplate>

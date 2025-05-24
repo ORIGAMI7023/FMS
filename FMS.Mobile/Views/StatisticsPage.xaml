@@ -10,7 +10,7 @@
 
     <ScrollView>
         <VerticalStackLayout Spacing="16" Padding="20">
-            <Label Text="项目收入统计" FontSize="24" HorizontalOptions="Center" />
+            <Label Text="项目金额统计" FontSize="24" HorizontalOptions="Center" />
 
             <DatePicker Date="{Binding SelectedDate}" />
             <Button Text="刷新" Command="{Binding LoadStatisticsCommand}" />
@@ -20,8 +20,9 @@
                     <DataTemplate>
                         <Frame BorderColor="Gray" Margin="5">
                             <VerticalStackLayout>
-                                <Label Text="{Binding itemType}" FontSize="18" />
-                                <Label Text="{Binding totalAmount}" />
+                                <Label Text="{Binding Owner}" FontSize="18" />
+                                <Label Text="{Binding ItemType}" />
+                                <Label Text="{Binding TotalAmount}" />
                             </VerticalStackLayout>
                         </Frame>
                     </DataTemplate>

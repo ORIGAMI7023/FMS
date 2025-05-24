@@ -1,3 +1,4 @@
+
 using FMS.Mobile.Models;
 using Newtonsoft.Json;
 
@@ -9,7 +10,6 @@ public class ApiService
 
     public ApiService()
     {
-        // 请根据实际IP和端口填写
 #if WINDOWS
         _httpClient = new HttpClient { BaseAddress = new Uri("http://10.0.2.2:7050") };
 #elif ANDROID
@@ -19,17 +19,25 @@ public class ApiService
 #endif
     }
 
-    public async Task<List<ItemTypeStatistics>> GetStatisticsAsync(DateTime selectedDate)
+    public async Task<List<MonthlyAmountStatistics>> GetMonthlyAmountStatisticsAsync(int year, int month)
     {
-        var url = $"/api/revenue/statistics/monthly?year={selectedDate.Year}&month={selectedDate.Month}";
-        var response = await _httpClient.GetAsync(url);
+        var response = await _httpClient.GetAsync($"/api/revenue/statistics/monthly/amount?year={year}&month={month}");
         if (response.IsSuccessStatusCode)
         {
             var json = await response.Content.ReadAsStringAsync();
-            Console.WriteLine("[DEBUG] API 返回：" + json);  // Debug
-            return JsonConvert.DeserializeObject<List<ItemTypeStatistics>>(json);
+            return JsonConvert.DeserializeObject<List<MonthlyAmountStatistics>>(json);
         }
-        return new List<ItemTypeStatistics>();
+        return new List<MonthlyAmountStatistics>();
     }
 
+    public async Task<List<MonthlyVisitCountStatistics>> GetMonthlyVisitCountStatisticsAsync(int year, int month)
+    {
+        var response = await _httpClient.GetAsync($"/api/revenue/statistics/monthly/visitcount?year={year}&month={month}");
+        if (response.IsSuccessStatusCode)
+        {
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonConvert.DeserializeObject<List<MonthlyVisitCountStatistics>>(json);
+        }
+        return new List<MonthlyVisitCountStatistics>();
+    }
 }

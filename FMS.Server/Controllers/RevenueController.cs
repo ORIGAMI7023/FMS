@@ -88,6 +88,62 @@ public class RevenueController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// statistics/monthly/amount 接口，用于获取指定年月的收入统计数据。
+    /// </summary>
+    [HttpGet("statistics/monthly/amount")]
+    public async Task<IActionResult> GetMonthlyAmountStatistics([FromQuery] int year, [FromQuery] int month)
+    {
+        if (year < 2000 || month < 1 || month > 12)
+            return BadRequest(new { message = "参数无效" });
+
+        var startDate = new DateOnly(year, month, 1);
+        var endDate = startDate.AddMonths(1).AddDays(-1);
+
+        var statistics = await _context.RevenueRecords
+            .Where(r => r.Date >= startDate && r.Date <= endDate
+                        && !r.IsExcludedFromSummary
+                        && !r.IsVisitCount)
+            .GroupBy(r => new { r.Owner, r.ItemType })
+            .Select(g => new
+            {
+                Owner = g.Key.Owner,
+                ItemType = g.Key.ItemType,
+                TotalAmount = g.Sum(r => r.Value)
+            })
+            .ToListAsync();
+
+        return Ok(statistics);
+    }
+
+    /// <summary>
+    /// statistics/monthly/visitcount 接口，用于获取指定年月的访问人次统计数据。
+    /// </summary>
+    [HttpGet("statistics/monthly/visitcount")]
+    public async Task<IActionResult> GetMonthlyVisitCountStatistics([FromQuery] int year, [FromQuery] int month)
+    {
+        if (year < 2000 || month < 1 || month > 12)
+            return BadRequest(new { message = "参数无效" });
+
+        var startDate = new DateOnly(year, month, 1);
+        var endDate = startDate.AddMonths(1).AddDays(-1);
+
+        var statistics = await _context.RevenueRecords
+            .Where(r => r.Date >= startDate && r.Date <= endDate
+                        && !r.IsExcludedFromSummary
+                        && r.IsVisitCount)
+            .GroupBy(r => new { r.Owner, r.ItemType })
+            .Select(g => new
+            {
+                Owner = g.Key.Owner,
+                ItemType = g.Key.ItemType,
+                TotalCount = g.Sum(r => r.Value) // 统一使用Value字段存储人次数
+            })
+            .ToListAsync();
+
+        return Ok(statistics);
+    }
+
 
 
 }

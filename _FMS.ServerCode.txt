@@ -53,7 +53,8 @@
 # --- FMS.Server.http ---
 @FMS.Server_HostAddress = http://localhost:7050
 
-### HttpPost("import") ڵ
+### [HttpPost("import")]
+### ڵ
 POST {{FMS.Server_HostAddress}}/api/revenue/import
 Content-Type: application/json
 
@@ -77,6 +78,36 @@ Content-Type: application/json
     "source": "Admin"
   }
 ]
+
+
+### [HttpGet("query")]
+### ѯ202411 ~ 131
+GET http://localhost:7050/api/revenue/query?start=2024-01-01&end=2024-01-31
+Accept: application/json
+### ѯҽΪк죬ʱ䷶ΧΪ 20241
+GET http://localhost:7050/api/revenue/query?start=2024-01-01&end=2024-01-31&owner=к
+Accept: application/json
+### ѯ Admin ¼ݣʱ䣩
+GET http://localhost:7050/api/revenue/query?source=Admin
+Accept: application/json
+### ѯ20241µġ˴Ρ
+GET http://localhost:7050/api/revenue/query?start=2024-01-01&end=2024-01-31&itemType=˴
+Accept: application/json
+### ѯȫݣգ
+GET http://localhost:7050/api/revenue/query?
+Accept: application/json
+
+
+### [HttpGet("statistics/monthly/amount")]
+### ͳƽ20245£
+GET {{FMS.Server_HostAddress}}/api/revenue/statistics/monthly/amount?year=2024&month=5
+Accept: application/json
+
+
+### [HttpGet("statistics/monthly/visitcount")]
+### ͳ˴Σ20245£
+GET {{FMS.Server_HostAddress}}/api/revenue/statistics/monthly/visitcount?year=2024&month=5
+Accept: application/json
 
 
 # --- Program.cs ---
@@ -168,6 +199,9 @@ public class RevenueController : ControllerBase
 
     public RevenueController(AppDbContext context) { _context = context; }
 
+    /// <summary>
+    /// import接口，用于从JSON格式批量导入收入记录数据。
+    /// </summary>
     [HttpPost("import")]
     public async Task<IActionResult> ImportFromJson([FromBody] List<RevenueRecord> records)
     {
@@ -202,7 +236,96 @@ public class RevenueController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// query接口，用于查询收入记录数据。
+    /// </summary>
+    [HttpGet("query")]
+    public async Task<IActionResult> Query(
+    [FromQuery] DateOnly? start = null,
+    [FromQuery] DateOnly? end = null,
+    [FromQuery] string? owner = null,
+    [FromQuery] string? source = null,
+    [FromQuery] string? itemType = null)
+    {
+        var query = _context.RevenueRecords.AsQueryable();
 
+        if (start.HasValue)
+            query = query.Where(r => r.Date >= start.Value);
+
+        if (end.HasValue)
+            query = query.Where(r => r.Date <= end.Value);
+
+        if (!string.IsNullOrWhiteSpace(owner))
+            query = query.Where(r => r.Owner == owner);
+
+        if (!string.IsNullOrWhiteSpace(source))
+            query = query.Where(r => r.Source == source);
+
+        if (!string.IsNullOrWhiteSpace(itemType))
+            query = query.Where(r => r.ItemType == itemType);
+
+        var result = await query
+            .OrderBy(r => r.Date)
+            .ToListAsync();
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// statistics/monthly/amount 接口，用于获取指定年月的收入统计数据。
+    /// </summary>
+    [HttpGet("statistics/monthly/amount")]
+    public async Task<IActionResult> GetMonthlyAmountStatistics([FromQuery] int year, [FromQuery] int month)
+    {
+        if (year < 2000 || month < 1 || month > 12)
+            return BadRequest(new { message = "参数无效" });
+
+        var startDate = new DateOnly(year, month, 1);
+        var endDate = startDate.AddMonths(1).AddDays(-1);
+
+        var statistics = await _context.RevenueRecords
+            .Where(r => r.Date >= startDate && r.Date <= endDate
+                        && !r.IsExcludedFromSummary
+                        && !r.IsVisitCount)
+            .GroupBy(r => new { r.Owner, r.ItemType })
+            .Select(g => new
+            {
+                Owner = g.Key.Owner,
+                ItemType = g.Key.ItemType,
+                TotalAmount = g.Sum(r => r.Value)
+            })
+            .ToListAsync();
+
+        return Ok(statistics);
+    }
+
+    /// <summary>
+    /// statistics/monthly/visitcount 接口，用于获取指定年月的访问人次统计数据。
+    /// </summary>
+    [HttpGet("statistics/monthly/visitcount")]
+    public async Task<IActionResult> GetMonthlyVisitCountStatistics([FromQuery] int year, [FromQuery] int month)
+    {
+        if (year < 2000 || month < 1 || month > 12)
+            return BadRequest(new { message = "参数无效" });
+
+        var startDate = new DateOnly(year, month, 1);
+        var endDate = startDate.AddMonths(1).AddDays(-1);
+
+        var statistics = await _context.RevenueRecords
+            .Where(r => r.Date >= startDate && r.Date <= endDate
+                        && !r.IsExcludedFromSummary
+                        && r.IsVisitCount)
+            .GroupBy(r => new { r.Owner, r.ItemType })
+            .Select(g => new
+            {
+                Owner = g.Key.Owner,
+                ItemType = g.Key.ItemType,
+                TotalCount = g.Sum(r => r.Value) // 统一使用Value字段存储人次数
+            })
+            .ToListAsync();
+
+        return Ok(statistics);
+    }
 
 
 

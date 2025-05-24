@@ -1,4 +1,4 @@
-using System;
+
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -14,53 +14,87 @@ public partial class DashboardViewModel : ObservableObject
     private readonly ApiService _api = new();
 
     [ObservableProperty]
-    private ObservableCollection<ItemTypeStatistics> records = new();
+    private ObservableCollection<MonthlyAmountStatistics> amountRecords = new();
 
-    // °Ñ DateOnly ¸ÄÎª DateTime£¬³õÊ¼ÖµÎª DateTime.Today
+    [ObservableProperty]
+    private ObservableCollection<MonthlyVisitCountStatistics> visitCountRecords = new();
+
     [ObservableProperty]
     private DateTime selectedDate = DateTime.Today;
 
     [ObservableProperty]
     private Chart dailyChart;
 
+    [ObservableProperty]
+    private Chart dailyVisitCountChart;
+
     public DashboardViewModel()
     {
-        LoadDataCommand.Execute(null);
+        // åˆå§‹ä¸åŠ è½½æ•°æ®
     }
 
     [RelayCommand]
     private async Task LoadDataAsync()
     {
-        // ÓÃ DateTime£¬Ö±½Ó´«¸øAPI
-        var data = await _api.GetStatisticsAsync(selectedDate);
-
-        // Debug Êä³ö½Ó¿ÚÊı¾İÊıÁ¿
-        Console.WriteLine("Loaded records count: " + (data?.Count ?? 0));
-        if (data != null)
+        try
         {
-            foreach (var item in data)
-                Console.WriteLine($"{item.itemType}: {item.totalAmount}");
-        }
+            var amountData = await _api.GetMonthlyAmountStatisticsAsync(SelectedDate.Year, SelectedDate.Month);
+            AmountRecords = new ObservableCollection<MonthlyAmountStatistics>(amountData ?? new List<MonthlyAmountStatistics>());
 
-        Records = new ObservableCollection<ItemTypeStatistics>(data ?? new List<ItemTypeStatistics>());
-        BuildChart();
+            var visitCountData = await _api.GetMonthlyVisitCountStatisticsAsync(SelectedDate.Year, SelectedDate.Month);
+            VisitCountRecords = new ObservableCollection<MonthlyVisitCountStatistics>(visitCountData ?? new List<MonthlyVisitCountStatistics>());
+
+            BuildAmountChart();
+            BuildVisitCountChart();
+        }
+        catch (Exception ex)
+        {
+            await Application.Current.MainPage.DisplayAlert("æç¤º", "ä»æœåŠ¡å™¨è·å–æ•°æ®å¤±è´¥ï¼Œå·²ä½¿ç”¨é»˜è®¤ç©ºå›¾è¡¨ã€‚", "ç¡®å®š");
+
+            AmountRecords = new ObservableCollection<MonthlyAmountStatistics>();
+            VisitCountRecords = new ObservableCollection<MonthlyVisitCountStatistics>();
+            BuildAmountChart(true);
+            BuildVisitCountChart(true);
+        }
     }
 
-    private void BuildChart()
+    private void BuildAmountChart(bool isFallback = false)
     {
-        var entries = Records.Select(r => new ChartEntry((float)r.totalAmount)
-        {
-            Label = r.itemType,
-            ValueLabel = r.totalAmount.ToString("F0"),
-            Color = SKColor.Parse("#6a5acd")
-        }).ToList();
-
-        if (entries == null || entries.Count == 0)
+        if ((AmountRecords == null || AmountRecords.Count == 0) && !isFallback)
         {
             DailyChart = null;
             return;
         }
 
+        var entries = (isFallback ? new List<ChartEntry> {
+            new ChartEntry(0) { Label = "æ— æ•°æ®", ValueLabel = "0", Color = SKColor.Parse("#cccccc") }
+        } : AmountRecords.Select(r => new ChartEntry((float)r.TotalAmount)
+        {
+            Label = $"{r.Owner}-{r.ItemType}",
+            ValueLabel = r.TotalAmount.ToString("F0"),
+            Color = SKColor.Parse("#6a5acd")
+        }).ToList());
+
         DailyChart = new BarChart { Entries = entries };
+    }
+
+    private void BuildVisitCountChart(bool isFallback = false)
+    {
+        if ((VisitCountRecords == null || VisitCountRecords.Count == 0) && !isFallback)
+        {
+            DailyVisitCountChart = null;
+            return;
+        }
+
+        var entries = (isFallback ? new List<ChartEntry> {
+            new ChartEntry(0) { Label = "æ— æ•°æ®", ValueLabel = "0", Color = SKColor.Parse("#cccccc") }
+        } : VisitCountRecords.Select(r => new ChartEntry((float)r.TotalCount)
+        {
+            Label = $"{r.Owner}-{r.ItemType}",
+            ValueLabel = r.TotalCount.ToString("F0"),
+            Color = SKColor.Parse("#ff6347")
+        }).ToList());
+
+        DailyVisitCountChart = new BarChart { Entries = entries };
     }
 }

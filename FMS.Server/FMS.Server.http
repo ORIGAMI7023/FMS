@@ -1,6 +1,7 @@
 @FMS.Server_HostAddress = http://localhost:7050
 
-### HttpPost("import") 用于导入收入数据
+### [HttpPost("import")]
+### 用于导入收入数据
 POST {{FMS.Server_HostAddress}}/api/revenue/import
 Content-Type: application/json
 
@@ -25,7 +26,8 @@ Content-Type: application/json
   }
 ]
 
-### HttpGet("query")
+
+### [HttpGet("query")]
 ### 查询：2024年1月1日 ~ 1月31日
 GET http://localhost:7050/api/revenue/query?start=2024-01-01&end=2024-01-31
 Accept: application/json
@@ -37,4 +39,19 @@ GET http://localhost:7050/api/revenue/query?source=Admin
 Accept: application/json
 ### 查询：2024年1月的“人次”类数据
 GET http://localhost:7050/api/revenue/query?start=2024-01-01&end=2024-01-31&itemType=人次
+Accept: application/json
+### 查询：全部数据（参数留空）
+GET http://localhost:7050/api/revenue/query?
+Accept: application/json
+
+
+### [HttpGet("statistics/monthly/amount")]
+### 按月统计金额（2024年5月）
+GET {{FMS.Server_HostAddress}}/api/revenue/statistics/monthly/amount?year=2024&month=5
+Accept: application/json
+
+
+### [HttpGet("statistics/monthly/visitcount")]
+### 按月统计人次（2024年5月）
+GET {{FMS.Server_HostAddress}}/api/revenue/statistics/monthly/visitcount?year=2024&month=5
 Accept: application/json

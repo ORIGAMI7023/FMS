@@ -1,3 +1,4 @@
+
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FMS.Mobile.Models;
@@ -11,7 +12,7 @@ public partial class StatisticsViewModel : ObservableObject
     private readonly ApiService _api = new();
 
     [ObservableProperty]
-    private ObservableCollection<ItemTypeStatistics> items = new();
+    private ObservableCollection<MonthlyAmountStatistics> items = new();
 
     [ObservableProperty]
     private DateTime selectedDate = DateTime.Today;
@@ -24,7 +25,7 @@ public partial class StatisticsViewModel : ObservableObject
     [RelayCommand]
     private async Task LoadStatisticsAsync()
     {
-        var list = await _api.GetStatisticsAsync(SelectedDate);
-        Items = new ObservableCollection<ItemTypeStatistics>(list ?? new List<ItemTypeStatistics>());
+        var list = await _api.GetMonthlyAmountStatisticsAsync(SelectedDate.Year, SelectedDate.Month);
+        Items = new ObservableCollection<MonthlyAmountStatistics>(list ?? new List<MonthlyAmountStatistics>());
     }
 }
