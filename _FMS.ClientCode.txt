@@ -1,0 +1,502 @@
+
+
+# --- App.xaml ---
+﻿<Application x:Class="FMS.Client.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:FMS.Client.Views"
+             StartupUri="Views/UploadPage.xaml">
+    <Application.Resources>
+         
+    </Application.Resources>
+</Application>
+
+
+# --- App.xaml.cs ---
+﻿using System.Configuration;
+using System.Data;
+using System.Windows;
+
+namespace FMS.Client
+{
+    /// <summary>
+    /// Interaction logic for App.xaml
+    /// </summary>
+    public partial class App : Application
+    {
+    }
+
+}
+
+
+# --- AssemblyInfo.cs ---
+using System.Windows;
+
+[assembly: ThemeInfo(
+    ResourceDictionaryLocation.None,            //where theme specific resource dictionaries are located
+                                                //(used if a resource is not found in the page,
+                                                // or application resource dictionaries)
+    ResourceDictionaryLocation.SourceAssembly   //where the generic resource dictionary is located
+                                                //(used if a resource is not found in the page,
+                                                // app, or any theme specific resource dictionaries)
+)]
+
+
+# --- FMS.Client.csproj ---
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Update="Config\UploadConfig.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
+
+
+# --- RelayCommand.cs ---
+﻿using System.Windows.Input;
+
+public class RelayCommand : ICommand
+{
+    private readonly Action _execute;
+    private readonly Func<bool>? _canExecute;
+
+    public RelayCommand(Action execute, Func<bool>? canExecute = null)
+    {
+        _execute = execute;
+        _canExecute = canExecute;
+    }
+
+    public event EventHandler? CanExecuteChanged;
+
+    public bool CanExecute(object? parameter) => _canExecute?.Invoke() ?? true;
+
+    public void Execute(object? parameter) => _execute();
+
+    public void RaiseCanExecuteChanged() =>
+        CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+}
+
+
+# --- Config\UploadConfig.json ---
+{
+  "医生分类": {
+    "陈霞": [
+      "现金",
+      "医保",
+      "退费"
+    ],
+    "王吉龙": [
+      "贴敷35",
+      "治疗",
+      "退费"
+    ],
+    "段雪琳": [
+      "西药",
+      "退费"
+    ],
+    "杨承红": [
+      "西药",
+      "退费"
+    ],
+    "陈世恒": [
+      "中药",
+      "退费"
+    ],
+    "杨小华": [
+      "中药",
+      "退费"
+    ],
+    "药房": [
+      "药房"
+    ],
+    "特病": [
+      "特病"
+    ],
+    "护士站": [
+      "护士站"
+    ],
+    "检验": [
+      "检验"
+    ],
+    "零药": [
+      "零药"
+    ]
+  }
+}
+
+# --- Models\DailyRevenueUploadRequest.cs ---
+using System;
+using System.Collections.Generic;
+
+namespace FMS.Client.Models
+{
+    public class DailyRevenueUploadRequest
+    {
+        public DateTime Date { get; set; }
+        public string? Remark { get; set; }
+        public List<RevenueItem> Items { get; set; } = new();
+    }
+}
+
+# --- Models\RevenueItem.cs ---
+namespace FMS.Client.Models
+{
+    public class RevenueItem
+    {
+        public string Doctor { get; set; }
+        public string Category { get; set; }
+        public decimal Amount { get; set; }
+    }
+}
+
+# --- Models\RevenueRecord.cs ---
+﻿public class RevenueRecord
+{
+    public string DoctorName { get; set; }
+    public DateTime Date { get; set; }
+    public decimal Amount { get; set; }
+}
+
+
+# --- Models\UploadConfig.cs ---
+using System.Collections.Generic;
+
+namespace FMS.Client.Models
+{
+    public class UploadConfig
+    {
+        public Dictionary<string, List<string>> 医生分类 { get; set; }
+    }
+}
+
+# --- Services\ApiService.cs ---
+using FMS.Client.Models;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Threading.Tasks;
+
+namespace FMS.Client.Services
+{
+    public class ApiService
+    {
+        private readonly HttpClient _client = new();
+
+        public async Task<bool> UploadDailyDataAsync(DailyRevenueUploadRequest data)
+        {
+            var res = await _client.PostAsJsonAsync("https://localhost:7050/api/revenue/daily", data);
+            return res.IsSuccessStatusCode;
+        }
+    }
+}
+
+# --- ViewModels\RevenueRecord.cs ---
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+
+namespace FMS.Client.ViewModels
+{
+    public class RevenueRecord : INotifyPropertyChanged
+    {
+        public string Doctor { get; set; }
+        public string Category { get; set; }
+
+        private decimal _amount;
+        public decimal Amount
+        {
+            get => _amount;
+            set
+            {
+                if (_amount != value)
+                {
+                    _amount = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string DisplayDoctorName { get; set; } // 用于首行医生名展示
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string name = null) =>
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
+
+    public class MainViewModel
+    {
+        public ObservableCollection<RevenueRecord> Records { get; set; }
+
+        public MainViewModel()
+        {
+            // 示例数据
+            var raw = new[]
+            {
+                new RevenueRecord { Doctor = "陈霞", Category = "现金" },
+                new RevenueRecord { Doctor = "陈霞", Category = "医保" },
+                new RevenueRecord { Doctor = "陈霞", Category = "退费" },
+                new RevenueRecord { Doctor = "王吉龙", Category = "贴款35" },
+                new RevenueRecord { Doctor = "王吉龙", Category = "治疗" },
+                new RevenueRecord { Doctor = "王吉龙", Category = "退费" }
+            };
+
+            Records = new ObservableCollection<RevenueRecord>();
+            string lastDoctor = null;
+            foreach (var record in raw)
+            {
+                if (record.Doctor != lastDoctor)
+                {
+                    record.DisplayDoctorName = record.Doctor;
+                    lastDoctor = record.Doctor;
+                }
+                else
+                {
+                    record.DisplayDoctorName = string.Empty;
+                }
+                Records.Add(record);
+            }
+        }
+    }
+}
+
+
+# --- ViewModels\UploadViewModel.cs ---
+using FMS.Client.Models;
+using FMS.Client.Services;
+using System;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text.Json;
+using System.Windows;
+using System.Windows.Input;
+using System.Collections.Generic;
+
+namespace FMS.Client.ViewModels
+{
+    public class RevenueItem : INotifyPropertyChanged
+    {
+        public string Doctor { get; set; }
+        public string Category { get; set; }
+        public decimal Amount { get; set; }
+        public bool IsFirstOfDoctor { get; set; }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string name = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
+
+    public class UploadViewModel : INotifyPropertyChanged
+    {
+        public ObservableCollection<RevenueItem> Items { get; set; } = new();
+        public Dictionary<string, List<string>> DoctorCategoryMap { get; private set; } = new();
+        public DateTime Date { get; set; } = DateTime.Today;
+        public string Remark { get; set; } = "";
+
+        public ICommand UploadCommand { get; }
+
+        private readonly ApiService _api = new();
+
+        public UploadViewModel()
+        {
+            LoadConfig();
+            GenerateAllRows();
+
+            UploadCommand = new RelayCommand(async () =>
+            {
+                var data = new DailyRevenueUploadRequest
+                {
+                    Date = this.Date,
+                    Remark = this.Remark,
+                    Items = Items
+                        .Where(i => i.Amount != 0)
+                        .Select(i => new Models.RevenueItem
+                        {
+                            Doctor = i.Doctor,
+                            Category = i.Category,
+                            Amount = i.Amount
+                        }).ToList()
+                };
+
+                var result = await _api.UploadDailyDataAsync(data);
+                MessageBox.Show(result ? "上传成功" : "上传失败");
+            });
+        }
+
+        private void LoadConfig()
+        {
+            var json = File.ReadAllText("Config/UploadConfig.json");
+            var config = JsonSerializer.Deserialize<UploadConfig>(json);
+            DoctorCategoryMap = config.医生分类;
+        }
+
+        private void GenerateAllRows()
+        {
+            foreach (var doctor in DoctorCategoryMap)
+            {
+                bool first = true;
+                foreach (var category in doctor.Value)
+                {
+                    Items.Add(new RevenueItem
+                    {
+                        Doctor = doctor.Key,
+                        Category = category,
+                        Amount = 0,
+                        IsFirstOfDoctor = first
+                    });
+                    first = false;
+                }
+            }
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string name = null)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
+}
+
+# --- Views\DuplicateDoctorHider.cs ---
+using System;
+using System.Globalization;
+using System.Windows.Data;
+
+namespace FMS.Client.Views
+{
+    public class DuplicateDoctorHider : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (values[0] == null || values[1] == null) return values[0];
+            string current = values[0].ToString();
+            string previous = values[1].ToString();
+            return current == previous ? string.Empty : current;
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+            => throw new NotImplementedException();
+    }
+}
+
+# --- Views\MainWindow.xaml ---
+<Window x:Class="FMS.Client.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:FMS.Client.ViewModels"
+        mc:Ignorable="d"
+        Title="FMS" Height="450" Width="800">
+    <Window.DataContext>
+        <vm:MainViewModel/>
+    </Window.DataContext>
+    <Grid>
+        <DataGrid ItemsSource="{Binding Records}" AutoGenerateColumns="False" HeadersVisibility="Column"
+                  RowHeaderWidth="0" CanUserAddRows="False" Margin="10">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="医生" Binding="{Binding DisplayDoctorName}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="分类" Binding="{Binding Category}" IsReadOnly="True"/>
+                <DataGridTemplateColumn Header="金额">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Amount}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <TextBox Text="{Binding Amount, UpdateSourceTrigger=PropertyChanged}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</Window>
+
+
+# --- Views\UploadPage.xaml ---
+<Window x:Class="FMS.Client.Views.UploadPage"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="上传营收数据" Height="630" Width="700" MinWidth="400" MinHeight="600">
+    <Grid Margin="10">
+        <StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <Label Content="日期" Width="50"/>
+                <DatePicker SelectedDate="{Binding Date}" Width="150"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <Label Content="备注" Width="50"/>
+                <TextBox Text="{Binding Remark}" Width="400"/>
+            </StackPanel>
+            <DataGrid ItemsSource="{Binding Items}"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      Height="430"
+                      Margin="0,0,0,10"
+                      RowHeaderWidth="0"
+                      CanUserSortColumns="False">
+                <DataGrid.CellStyle>
+                    <Style TargetType="DataGridCell">
+                        <Setter Property="Background" Value="White"/>
+                        <Setter Property="Foreground" Value="Black"/>
+                        <Setter Property="BorderThickness" Value="0.5"/>
+                        <Style.Triggers>    
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#FFD0E7FF"/>
+                                <!-- 浅蓝 -->
+                                <Setter Property="Foreground" Value="Black"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.CellStyle>
+
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="BorderThickness" Value="0,1,0,0"/>
+                        <Setter Property="BorderBrush" Value="White"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsFirstOfDoctor}" Value="True">
+                                <Setter Property="BorderBrush" Value="Black"/>
+                                <Setter Property="BorderThickness" Value="0,1.5,0,0"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+
+                </DataGrid.RowStyle>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="医生" Binding="{Binding Doctor}" Width="80" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="分类" Binding="{Binding Category}" Width="80" IsReadOnly="True"/>
+                    <DataGridTextColumn Header="金额" Binding="{Binding Amount}" Width="*" />
+                </DataGrid.Columns>
+            </DataGrid>
+            <Button Content="上传" Command="{Binding UploadCommand}" Width="100" HorizontalAlignment="Center"/>
+        </StackPanel>
+    </Grid>
+</Window>
+
+# --- Views\UploadPage.xaml.cs ---
+using System.Windows;
+using FMS.Client.ViewModels;
+
+namespace FMS.Client.Views
+{
+    public partial class UploadPage : Window
+    {
+        public UploadPage()
+        {
+            InitializeComponent();
+            DataContext = new UploadViewModel();
+        }
+    }
+}
