@@ -25,10 +25,10 @@
             <Label Text="{Binding AverageDaily, StringFormat='{}{0:C}'}" FontSize="24" FontAttributes="Bold" Margin="0,0,0,3"/>
 
             <calendar:Calendar
-                HorizontalOptions="Center"
-                VerticalOptions="Start"
                 SelectedDate="{Binding SelectedDate, Mode=TwoWay}"
-                Month="{Binding SelectedDate}"/>
+                HorizontalOptions="Center"
+                TodayFillColor="#f0f0f0"
+                Culture="zh-CN" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

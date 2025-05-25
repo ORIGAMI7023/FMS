@@ -24,6 +24,7 @@ namespace FMS.Mobile.ViewModels
         [ObservableProperty]
         private DateTime selectedDate = DateTime.Today;
 
+
         public DashboardViewModel()
         {
             _apiService = new ApiService();
@@ -68,4 +69,7 @@ namespace FMS.Mobile.ViewModels
             }
         }
     }
+
+
+
 }
