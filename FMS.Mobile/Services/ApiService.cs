@@ -11,33 +11,26 @@ public class ApiService
     public ApiService()
     {
 #if WINDOWS
-        _httpClient = new HttpClient { BaseAddress = new Uri("http://10.0.2.2:7050") };
+        _httpClient = new HttpClient { BaseAddress = new Uri("https://127.0.0.1:7051") };
 #elif ANDROID
-        _httpClient = new HttpClient { BaseAddress = new Uri("http://192.168.50.203:7050") };
+        _httpClient = new HttpClient { BaseAddress = new Uri("https://192.168.50.203:7051") };
 #else
-        _httpClient = new HttpClient { BaseAddress = new Uri("http://localhost:7050") };
+        _httpClient = new HttpClient { BaseAddress = new Uri("https://localhost:7051") };
 #endif
     }
 
-    public async Task<List<MonthlyAmountStatistics>> GetMonthlyAmountStatisticsAsync(int year, int month)
+    /// <summary>
+    /// 获取指定年月的月度收入摘要
+    /// </summary>
+    public async Task<MonthlySummary?> GetMonthlySummaryAsync(int year, int month)
     {
-        var response = await _httpClient.GetAsync($"/api/revenue/statistics/monthly/amount?year={year}&month={month}");
+        var response = await _httpClient.GetAsync($"/api/revenue/summary?year={year}&month={month}");
         if (response.IsSuccessStatusCode)
         {
             var json = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<List<MonthlyAmountStatistics>>(json);
+            return JsonConvert.DeserializeObject<MonthlySummary>(json);
         }
-        return new List<MonthlyAmountStatistics>();
+        return null;
     }
 
-    public async Task<List<MonthlyVisitCountStatistics>> GetMonthlyVisitCountStatisticsAsync(int year, int month)
-    {
-        var response = await _httpClient.GetAsync($"/api/revenue/statistics/monthly/visitcount?year={year}&month={month}");
-        if (response.IsSuccessStatusCode)
-        {
-            var json = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<List<MonthlyVisitCountStatistics>>(json);
-        }
-        return new List<MonthlyVisitCountStatistics>();
-    }
 }

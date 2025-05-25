@@ -1,4 +1,5 @@
-﻿using FMS.Mobile.ViewModels;
+
+using FMS.Mobile.ViewModels;
 
 namespace FMS.Mobile.Views;
 
@@ -7,6 +8,12 @@ public partial class DashboardPage : ContentPage
     public DashboardPage()
     {
         InitializeComponent();
-        BindingContext = new DashboardViewModel();
+        Loaded += async (s, e) =>
+        {
+            if (BindingContext is DashboardViewModel vm)
+            {
+                await vm.LoadSummaryCommand.ExecuteAsync(null);
+            }
+        };
     }
 }

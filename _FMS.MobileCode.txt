@@ -173,27 +173,21 @@ public class ZeroToVisibleConverter : IValueConverter
 }
 
 
-# --- Models\MonthlyAmountStatistics.cs ---
+# --- Models\MonthlySummary.cs ---
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace FMS.Mobile.Models;
-
-public class MonthlyAmountStatistics
+namespace FMS.Mobile.Models
 {
-    public string Owner { get; set; }
-    public string ItemType { get; set; }
-    public decimal TotalAmount { get; set; }
-}
-
-
-# --- Models\MonthlyVisitCountStatistics.cs ---
-
-namespace FMS.Mobile.Models;
-
-public class MonthlyVisitCountStatistics
-{
-    public string Owner { get; set; }
-    public string ItemType { get; set; }
-    public decimal TotalCount { get; set; }
+    public class MonthlySummary
+    {
+        public decimal TotalMonthly { get; set; }
+        public decimal TotalToday { get; set; }
+        public decimal AverageDaily { get; set; }
+    }
 }
 
 
@@ -823,171 +817,102 @@ public class ApiService
     public ApiService()
     {
 #if WINDOWS
-        _httpClient = new HttpClient { BaseAddress = new Uri("http://10.0.2.2:7050") };
+        _httpClient = new HttpClient { BaseAddress = new Uri("https://127.0.0.1:7051") };
 #elif ANDROID
-        _httpClient = new HttpClient { BaseAddress = new Uri("http://192.168.50.203:7050") };
+        _httpClient = new HttpClient { BaseAddress = new Uri("https://192.168.50.203:7051") };
 #else
-        _httpClient = new HttpClient { BaseAddress = new Uri("http://localhost:7050") };
+        _httpClient = new HttpClient { BaseAddress = new Uri("https://localhost:7051") };
 #endif
     }
 
-    public async Task<List<MonthlyAmountStatistics>> GetMonthlyAmountStatisticsAsync(int year, int month)
+    /// <summary>
+    /// ȡָµ¶ժҪ
+    /// </summary>
+    public async Task<MonthlySummary?> GetMonthlySummaryAsync(int year, int month)
     {
-        var response = await _httpClient.GetAsync($"/api/revenue/statistics/monthly/amount?year={year}&month={month}");
+        var response = await _httpClient.GetAsync($"/api/revenue/summary?year={year}&month={month}");
         if (response.IsSuccessStatusCode)
         {
             var json = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<List<MonthlyAmountStatistics>>(json);
+            return JsonConvert.DeserializeObject<MonthlySummary>(json);
         }
-        return new List<MonthlyAmountStatistics>();
+        return null;
     }
 
-    public async Task<List<MonthlyVisitCountStatistics>> GetMonthlyVisitCountStatisticsAsync(int year, int month)
-    {
-        var response = await _httpClient.GetAsync($"/api/revenue/statistics/monthly/visitcount?year={year}&month={month}");
-        if (response.IsSuccessStatusCode)
-        {
-            var json = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<List<MonthlyVisitCountStatistics>>(json);
-        }
-        return new List<MonthlyVisitCountStatistics>();
-    }
 }
 
 
 # --- ViewModels\DashboardViewModel.cs ---
 
-using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FMS.Mobile.Models;
 using FMS.Mobile.Services;
-using Microcharts;
-using SkiaSharp;
+using System;
+using System.Threading.Tasks;
 
-namespace FMS.Mobile.ViewModels;
-
-public partial class DashboardViewModel : ObservableObject
+namespace FMS.Mobile.ViewModels
 {
-    private readonly ApiService _api = new();
-
-    [ObservableProperty]
-    private ObservableCollection<MonthlyAmountStatistics> amountRecords = new();
-
-    [ObservableProperty]
-    private ObservableCollection<MonthlyVisitCountStatistics> visitCountRecords = new();
-
-    [ObservableProperty]
-    private DateTime selectedDate = DateTime.Today;
-
-    [ObservableProperty]
-    private Chart dailyChart;
-
-    [ObservableProperty]
-    private Chart dailyVisitCountChart;
-
-    public DashboardViewModel()
+    public partial class DashboardViewModel : ObservableObject
     {
-        // 初始不加载数据
-    }
+        private readonly ApiService _apiService;
 
-    [RelayCommand]
-    private async Task LoadDataAsync()
-    {
-        try
+        [ObservableProperty]
+        private decimal totalMonthly;
+
+        [ObservableProperty]
+        private decimal totalToday;
+
+        [ObservableProperty]
+        private decimal averageDaily;
+
+        public DashboardViewModel()
         {
-            var amountData = await _api.GetMonthlyAmountStatisticsAsync(SelectedDate.Year, SelectedDate.Month);
-            AmountRecords = new ObservableCollection<MonthlyAmountStatistics>(amountData ?? new List<MonthlyAmountStatistics>());
-
-            var visitCountData = await _api.GetMonthlyVisitCountStatisticsAsync(SelectedDate.Year, SelectedDate.Month);
-            VisitCountRecords = new ObservableCollection<MonthlyVisitCountStatistics>(visitCountData ?? new List<MonthlyVisitCountStatistics>());
-
-            BuildAmountChart();
-            BuildVisitCountChart();
-        }
-        catch (Exception ex)
-        {
-            await Application.Current.MainPage.DisplayAlert("提示", "从服务器获取数据失败，已使用默认空图表。", "确定");
-
-            AmountRecords = new ObservableCollection<MonthlyAmountStatistics>();
-            VisitCountRecords = new ObservableCollection<MonthlyVisitCountStatistics>();
-            BuildAmountChart(true);
-            BuildVisitCountChart(true);
-        }
-    }
-
-    private void BuildAmountChart(bool isFallback = false)
-    {
-        if ((AmountRecords == null || AmountRecords.Count == 0) && !isFallback)
-        {
-            DailyChart = null;
-            return;
+            _apiService = new ApiService();
+            LoadSummaryCommand = new AsyncRelayCommand(LoadSummaryAsync);
         }
 
-        var entries = (isFallback ? new List<ChartEntry> {
-            new ChartEntry(0) { Label = "无数据", ValueLabel = "0", Color = SKColor.Parse("#cccccc") }
-        } : AmountRecords.Select(r => new ChartEntry((float)r.TotalAmount)
-        {
-            Label = $"{r.Owner}-{r.ItemType}",
-            ValueLabel = r.TotalAmount.ToString("F0"),
-            Color = SKColor.Parse("#6a5acd")
-        }).ToList());
+        public IAsyncRelayCommand LoadSummaryCommand { get; }
 
-        DailyChart = new BarChart { Entries = entries };
-    }
-
-    private void BuildVisitCountChart(bool isFallback = false)
-    {
-        if ((VisitCountRecords == null || VisitCountRecords.Count == 0) && !isFallback)
+        private async Task LoadSummaryAsync()
         {
-            DailyVisitCountChart = null;
-            return;
+            var now = DateTime.Now;
+
+            try
+            {
+                var result = await _apiService.GetMonthlySummaryAsync(now.Year, now.Month);
+
+                if (result != null)
+                {
+                    TotalMonthly = result.TotalMonthly;
+                    TotalToday = result.TotalToday;
+                    AverageDaily = result.AverageDaily;
+                }
+                else
+                {
+                    TotalMonthly = 0;
+                    TotalToday = 0;
+                    AverageDaily = 0;
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                // 񲻿ɴ
+                Console.WriteLine($"[] {ex.Message}");
+                await Shell.Current.DisplayAlert("", "޷ӵǷС", "ȷ");
+
+                TotalMonthly = 0;
+                TotalToday = 0;
+                AverageDaily = 0;
+            }
+            catch (Exception ex)
+            {
+                // δ쳣
+                Console.WriteLine($"[ϵͳ] {ex.Message}");
+                await Shell.Current.DisplayAlert("", "ʱ쳣", "ȷ");
+            }
         }
 
-        var entries = (isFallback ? new List<ChartEntry> {
-            new ChartEntry(0) { Label = "无数据", ValueLabel = "0", Color = SKColor.Parse("#cccccc") }
-        } : VisitCountRecords.Select(r => new ChartEntry((float)r.TotalCount)
-        {
-            Label = $"{r.Owner}-{r.ItemType}",
-            ValueLabel = r.TotalCount.ToString("F0"),
-            Color = SKColor.Parse("#ff6347")
-        }).ToList());
-
-        DailyVisitCountChart = new BarChart { Entries = entries };
-    }
-}
-
-
-# --- ViewModels\StatisticsViewModel.cs ---
-
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using FMS.Mobile.Models;
-using FMS.Mobile.Services;
-using System.Collections.ObjectModel;
-
-namespace FMS.Mobile.ViewModels;
-
-public partial class StatisticsViewModel : ObservableObject
-{
-    private readonly ApiService _api = new();
-
-    [ObservableProperty]
-    private ObservableCollection<MonthlyAmountStatistics> items = new();
-
-    [ObservableProperty]
-    private DateTime selectedDate = DateTime.Today;
-
-    public StatisticsViewModel()
-    {
-        LoadStatisticsCommand.Execute(null);
-    }
-
-    [RelayCommand]
-    private async Task LoadStatisticsAsync()
-    {
-        var list = await _api.GetMonthlyAmountStatisticsAsync(SelectedDate.Year, SelectedDate.Month);
-        Items = new ObservableCollection<MonthlyAmountStatistics>(list ?? new List<MonthlyAmountStatistics>());
     }
 }
 
@@ -996,29 +921,33 @@ public partial class StatisticsViewModel : ObservableObject
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:microcharts="clr-namespace:Microcharts.Maui;assembly=Microcharts.Maui"
-             xmlns:vm="clr-namespace:FMS.Mobile.ViewModels"
+             xmlns:viewmodels="clr-namespace:FMS.Mobile.ViewModels"
              x:Class="FMS.Mobile.Views.DashboardPage">
 
+    <ContentPage.BindingContext>
+        <viewmodels:DashboardViewModel />
+    </ContentPage.BindingContext>
+
     <ScrollView>
-        <VerticalStackLayout Spacing="16" Padding="20">
-            <Label Text="医生营收 Dashboard" FontSize="24" HorizontalOptions="Center" />
+        <VerticalStackLayout Padding="20" Spacing="20">
 
-            <DatePicker Date="{Binding SelectedDate}" />
-            <Button Text="刷新" Command="{Binding LoadDataCommand}" />
+            <Label Text="月度总营收" FontSize="18" />
+            <Label Text="{Binding TotalMonthly, StringFormat='{}{0:C}'}" FontSize="24" FontAttributes="Bold" />
 
-            <microcharts:ChartView Chart="{Binding DailyChart}" HeightRequest="300" />
-            <Label Text="金额统计" FontSize="16" HorizontalOptions="Center" Margin="0,10"/>
+            <Label Text="今日总营收" FontSize="18" />
+            <Label Text="{Binding TotalToday, StringFormat='{}{0:C}'}" FontSize="24" FontAttributes="Bold" />
 
-            <microcharts:ChartView Chart="{Binding DailyVisitCountChart}" HeightRequest="300" />
-            <Label Text="人次统计" FontSize="16" HorizontalOptions="Center" Margin="0,10"/>
+            <Label Text="本月日均营收" FontSize="18" />
+            <Label Text="{Binding AverageDaily, StringFormat='{}{0:C}'}" FontSize="24" FontAttributes="Bold" />
+
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>
 
 
 # --- Views\DashboardPage.xaml.cs ---
-﻿using FMS.Mobile.ViewModels;
+
+using FMS.Mobile.ViewModels;
 
 namespace FMS.Mobile.Views;
 
@@ -1027,42 +956,12 @@ public partial class DashboardPage : ContentPage
     public DashboardPage()
     {
         InitializeComponent();
-        BindingContext = new DashboardViewModel();
+        Loaded += async (s, e) =>
+        {
+            if (BindingContext is DashboardViewModel vm)
+            {
+                await vm.LoadSummaryCommand.ExecuteAsync(null);
+            }
+        };
     }
 }
-
-
-# --- Views\StatisticsPage.xaml ---
-<?xml version="1.0" encoding="utf-8" ?>
-<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:vm="clr-namespace:FMS.Mobile.ViewModels"
-             x:Class="FMS.Mobile.Views.StatisticsPage">
-
-    <ContentPage.BindingContext>
-        <vm:StatisticsViewModel />
-    </ContentPage.BindingContext>
-
-    <ScrollView>
-        <VerticalStackLayout Spacing="16" Padding="20">
-            <Label Text="项目金额统计" FontSize="24" HorizontalOptions="Center" />
-
-            <DatePicker Date="{Binding SelectedDate}" />
-            <Button Text="刷新" Command="{Binding LoadStatisticsCommand}" />
-
-            <CollectionView ItemsSource="{Binding Items}">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <Frame BorderColor="Gray" Margin="5">
-                            <VerticalStackLayout>
-                                <Label Text="{Binding Owner}" FontSize="18" />
-                                <Label Text="{Binding ItemType}" />
-                                <Label Text="{Binding TotalAmount}" />
-                            </VerticalStackLayout>
-                        </Frame>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
-        </VerticalStackLayout>
-    </ScrollView>
-</ContentPage>

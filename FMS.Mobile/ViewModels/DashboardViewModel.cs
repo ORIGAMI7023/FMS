@@ -1,100 +1,72 @@
 
-using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FMS.Mobile.Models;
 using FMS.Mobile.Services;
-using Microcharts;
-using SkiaSharp;
+using System;
+using System.Threading.Tasks;
 
-namespace FMS.Mobile.ViewModels;
-
-public partial class DashboardViewModel : ObservableObject
+namespace FMS.Mobile.ViewModels
 {
-    private readonly ApiService _api = new();
-
-    [ObservableProperty]
-    private ObservableCollection<MonthlyAmountStatistics> amountRecords = new();
-
-    [ObservableProperty]
-    private ObservableCollection<MonthlyVisitCountStatistics> visitCountRecords = new();
-
-    [ObservableProperty]
-    private DateTime selectedDate = DateTime.Today;
-
-    [ObservableProperty]
-    private Chart dailyChart;
-
-    [ObservableProperty]
-    private Chart dailyVisitCountChart;
-
-    public DashboardViewModel()
+    public partial class DashboardViewModel : ObservableObject
     {
-        // ÂàùÂßã‰∏çÂä†ËΩΩÊï∞ÊçÆ
-    }
+        private readonly ApiService _apiService;
 
-    [RelayCommand]
-    private async Task LoadDataAsync()
-    {
-        try
+        [ObservableProperty]
+        private decimal totalMonthly;
+
+        [ObservableProperty]
+        private decimal totalToday;
+
+        [ObservableProperty]
+        private decimal averageDaily;
+
+        public DashboardViewModel()
         {
-            var amountData = await _api.GetMonthlyAmountStatisticsAsync(SelectedDate.Year, SelectedDate.Month);
-            AmountRecords = new ObservableCollection<MonthlyAmountStatistics>(amountData ?? new List<MonthlyAmountStatistics>());
-
-            var visitCountData = await _api.GetMonthlyVisitCountStatisticsAsync(SelectedDate.Year, SelectedDate.Month);
-            VisitCountRecords = new ObservableCollection<MonthlyVisitCountStatistics>(visitCountData ?? new List<MonthlyVisitCountStatistics>());
-
-            BuildAmountChart();
-            BuildVisitCountChart();
-        }
-        catch (Exception ex)
-        {
-            await Application.Current.MainPage.DisplayAlert("ÊèêÁ§∫", "‰ªéÊúçÂä°Âô®Ëé∑ÂèñÊï∞ÊçÆÂ§±Ë¥•ÔºåÂ∑≤‰ΩøÁî®ÈªòËÆ§Á©∫ÂõæË°®„ÄÇ", "Á°ÆÂÆö");
-
-            AmountRecords = new ObservableCollection<MonthlyAmountStatistics>();
-            VisitCountRecords = new ObservableCollection<MonthlyVisitCountStatistics>();
-            BuildAmountChart(true);
-            BuildVisitCountChart(true);
-        }
-    }
-
-    private void BuildAmountChart(bool isFallback = false)
-    {
-        if ((AmountRecords == null || AmountRecords.Count == 0) && !isFallback)
-        {
-            DailyChart = null;
-            return;
+            _apiService = new ApiService();
+            LoadSummaryCommand = new AsyncRelayCommand(LoadSummaryAsync);
         }
 
-        var entries = (isFallback ? new List<ChartEntry> {
-            new ChartEntry(0) { Label = "Êó†Êï∞ÊçÆ", ValueLabel = "0", Color = SKColor.Parse("#cccccc") }
-        } : AmountRecords.Select(r => new ChartEntry((float)r.TotalAmount)
-        {
-            Label = $"{r.Owner}-{r.ItemType}",
-            ValueLabel = r.TotalAmount.ToString("F0"),
-            Color = SKColor.Parse("#6a5acd")
-        }).ToList());
+        public IAsyncRelayCommand LoadSummaryCommand { get; }
 
-        DailyChart = new BarChart { Entries = entries };
-    }
-
-    private void BuildVisitCountChart(bool isFallback = false)
-    {
-        if ((VisitCountRecords == null || VisitCountRecords.Count == 0) && !isFallback)
+        private async Task LoadSummaryAsync()
         {
-            DailyVisitCountChart = null;
-            return;
+            var now = DateTime.Now;
+
+            try
+            {
+                var result = await _apiService.GetMonthlySummaryAsync(now.Year, now.Month);
+
+                if (result != null)
+                {
+                    TotalMonthly = result.TotalMonthly;
+                    TotalToday = result.TotalToday;
+                    AverageDaily = result.AverageDaily;
+                }
+                else
+                {
+                    TotalMonthly = 0;
+                    TotalToday = 0;
+                    AverageDaily = 0;
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                // Õ¯¬Á¥ÌŒÛªÚ∑˛ŒÒ≤ªø…¥Ô
+                Console.WriteLine($"[Õ¯¬Á¥ÌŒÛ] {ex.Message}");
+                await Shell.Current.DisplayAlert("¥ÌŒÛ", "Œﬁ∑®¡¨Ω”µΩ∑˛ŒÒ∆˜£¨«ÎºÏ≤ÈÕ¯¬ÁªÚ∑˛ŒÒ «∑Ò‘À––°£", "»∑∂®");
+
+                TotalMonthly = 0;
+                TotalToday = 0;
+                AverageDaily = 0;
+            }
+            catch (Exception ex)
+            {
+                // ∆‰À˚Œ¥≤∂ªÒ“Ï≥£
+                Console.WriteLine($"[œµÕ≥¥ÌŒÛ] {ex.Message}");
+                await Shell.Current.DisplayAlert("¥ÌŒÛ", "º”‘ÿ ˝æ› ±≥ˆœ÷“Ï≥£°£", "»∑∂®");
+            }
         }
 
-        var entries = (isFallback ? new List<ChartEntry> {
-            new ChartEntry(0) { Label = "Êó†Êï∞ÊçÆ", ValueLabel = "0", Color = SKColor.Parse("#cccccc") }
-        } : VisitCountRecords.Select(r => new ChartEntry((float)r.TotalCount)
-        {
-            Label = $"{r.Owner}-{r.ItemType}",
-            ValueLabel = r.TotalCount.ToString("F0"),
-            Color = SKColor.Parse("#ff6347")
-        }).ToList());
-
-        DailyVisitCountChart = new BarChart { Entries = entries };
     }
 }
