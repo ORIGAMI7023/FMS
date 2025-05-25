@@ -28,15 +28,13 @@ namespace FMS.Mobile.ViewModels
         public DashboardViewModel()
         {
             _apiService = new ApiService();
-            LoadSummaryCommand = new AsyncRelayCommand(LoadSummaryAsync);
             LoadSummaryAsync();//初始化获取数据
         }
 
-        public IAsyncRelayCommand LoadSummaryCommand { get; }
 
         partial void OnSelectedDateChanged(DateTime value)
         {
-            LoadSummaryCommand.Execute(null);
+            LoadSummaryAsync();
         }
 
         private async Task LoadSummaryAsync()
