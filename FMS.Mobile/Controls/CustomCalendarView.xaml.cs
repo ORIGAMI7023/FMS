@@ -67,11 +67,16 @@ namespace FMS.Mobile.Controls
                 {
                     Text = i.ToString(),
                     FontSize = 14,
-                    Padding = new Thickness(0),
-                    Margin = new Thickness(2),
+                    Padding = 0,
+                    Margin = new Thickness(6),
                     BackgroundColor = Colors.Transparent,
                     TextColor = Colors.Black,
-                    CommandParameter = currentDate
+                    CommandParameter = currentDate,
+                    CornerRadius = 9999,
+                    HorizontalOptions = LayoutOptions.Center,
+                    VerticalOptions = LayoutOptions.Center,
+                    WidthRequest = 40,
+                    HeightRequest = 40
                 };
 
                 btn.Clicked += (s, e) =>
