@@ -2,6 +2,7 @@ using ClosedXML.Excel;
 using DocumentFormat.OpenXml.Wordprocessing;
 using FMS.Server.Data;
 using FMS.Server.Models;
+using FMS.Server.Models.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
@@ -89,60 +90,47 @@ public class RevenueController : ControllerBase
     }
 
     /// <summary>
-    /// statistics/monthly/amount 接口，用于获取指定年月的收入统计数据。
+    /// 获取指定月份的收入统计摘要信息。
     /// </summary>
-    [HttpGet("statistics/monthly/amount")]
-    public async Task<IActionResult> GetMonthlyAmountStatistics([FromQuery] int year, [FromQuery] int month)
+    /// <returns>包含 指定月度总营收，指定日期营收，指定月月均收入 </returns>
+    [HttpGet("statistics/monthly/summary")]
+    public async Task<ActionResult<MonthlySummaryDto>> GetMonthlySummary(DateOnly date)
     {
-        if (year < 2000 || month < 1 || month > 12)
-            return BadRequest(new { message = "参数无效" });
+        var targetMonthStart = new DateOnly(date.Year, date.Month, 1);  // 获取目标月的第一天
+        int daysInMonth = DateTime.DaysInMonth(date.Year, date.Month);  // 获取该月的总天数
+        var targetMonthEnd = targetMonthStart.AddDays(daysInMonth);  // 即下月1号，用于 "<" 判断
 
-        var startDate = new DateOnly(year, month, 1);
-        var endDate = startDate.AddMonths(1).AddDays(-1);
-
-        var statistics = await _context.RevenueRecords
-            .Where(r => r.Date >= startDate && r.Date <= endDate
-                        && !r.IsExcludedFromSummary
-                        && !r.IsVisitCount)
-            .GroupBy(r => new { r.Owner, r.ItemType })
-            .Select(g => new
-            {
-                Owner = g.Key.Owner,
-                ItemType = g.Key.ItemType,
-                TotalAmount = g.Sum(r => r.Value)
-            })
+        // 获取本月记录
+        var recordsInMonth = await _context.RevenueRecords
+            .Where(r =>
+                r.Date >= targetMonthStart &&
+                r.Date < targetMonthEnd &&
+                !r.IsExcludedFromSummary &&
+                !r.IsVisitCount)
             .ToListAsync();
 
-        return Ok(statistics);
+        // 封装计算逻辑：退费为负数
+        decimal AdjustedValue(RevenueRecord r) =>
+            r.ItemType == "退费" ? -r.Value : r.Value;
+
+        var totalMonthly = recordsInMonth.Sum(r => AdjustedValue(r));
+
+        var totalToday = recordsInMonth
+            .Where(r => r.Date == date)
+            .Sum(r => AdjustedValue(r));
+
+        var averageDaily = daysInMonth > 0 ? totalMonthly / daysInMonth : 0;
+
+        var result = new MonthlySummaryDto
+        {
+            TotalMonthly = totalMonthly,
+            TotalToday = totalToday,
+            AverageDaily = Math.Round(averageDaily, 2)
+        };
+
+        return Ok(result);
     }
 
-    /// <summary>
-    /// statistics/monthly/visitcount 接口，用于获取指定年月的访问人次统计数据。
-    /// </summary>
-    [HttpGet("statistics/monthly/visitcount")]
-    public async Task<IActionResult> GetMonthlyVisitCountStatistics([FromQuery] int year, [FromQuery] int month)
-    {
-        if (year < 2000 || month < 1 || month > 12)
-            return BadRequest(new { message = "参数无效" });
-
-        var startDate = new DateOnly(year, month, 1);
-        var endDate = startDate.AddMonths(1).AddDays(-1);
-
-        var statistics = await _context.RevenueRecords
-            .Where(r => r.Date >= startDate && r.Date <= endDate
-                        && !r.IsExcludedFromSummary
-                        && r.IsVisitCount)
-            .GroupBy(r => new { r.Owner, r.ItemType })
-            .Select(g => new
-            {
-                Owner = g.Key.Owner,
-                ItemType = g.Key.ItemType,
-                TotalCount = g.Sum(r => r.Value) // 统一使用Value字段存储人次数
-            })
-            .ToListAsync();
-
-        return Ok(statistics);
-    }
 
 
 

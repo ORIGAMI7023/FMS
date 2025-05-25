@@ -21,6 +21,9 @@ namespace FMS.Mobile.ViewModels
         [ObservableProperty]
         private decimal averageDaily;
 
+        [ObservableProperty]
+        private DateTime selectedDate = DateTime.Today;
+
         public DashboardViewModel()
         {
             _apiService = new ApiService();
@@ -29,14 +32,17 @@ namespace FMS.Mobile.ViewModels
 
         public IAsyncRelayCommand LoadSummaryCommand { get; }
 
+        partial void OnSelectedDateChanged(DateTime value)
+        {
+            LoadSummaryCommand.Execute(null);
+        }
+
         private async Task LoadSummaryAsync()
         {
-            var now = DateTime.Now;
-
+            var date = SelectedDate;
             try
             {
-                var result = await _apiService.GetMonthlySummaryAsync(now.Year, now.Month);
-
+                var result = await _apiService.GetMonthlySummaryAsync(date);
                 if (result != null)
                 {
                     TotalMonthly = result.TotalMonthly;
@@ -52,21 +58,17 @@ namespace FMS.Mobile.ViewModels
             }
             catch (HttpRequestException ex)
             {
-                // ÍøÂç´íÎó»ò·şÎñ²»¿É´ï
-                Console.WriteLine($"[ÍøÂç´íÎó] {ex.Message}");
-                await Shell.Current.DisplayAlert("´íÎó", "ÎŞ·¨Á¬½Óµ½·şÎñÆ÷£¬Çë¼ì²éÍøÂç»ò·şÎñÊÇ·ñÔËĞĞ¡£", "È·¶¨");
-
+                Console.WriteLine($"[ç½‘ç»œé”™è¯¯] {ex.Message}");
+                await Shell.Current.DisplayAlert("é”™è¯¯", "æ— æ³•è¿æ¥åˆ°æœåŠ¡å™¨ï¼Œè¯·æ£€æŸ¥ç½‘ç»œæˆ–æœåŠ¡æ˜¯å¦è¿è¡Œã€‚", "ç¡®å®š");
                 TotalMonthly = 0;
                 TotalToday = 0;
                 AverageDaily = 0;
             }
             catch (Exception ex)
             {
-                // ÆäËûÎ´²¶»ñÒì³£
-                Console.WriteLine($"[ÏµÍ³´íÎó] {ex.Message}");
-                await Shell.Current.DisplayAlert("´íÎó", "¼ÓÔØÊı¾İÊ±³öÏÖÒì³£¡£", "È·¶¨");
+                Console.WriteLine($"[ç³»ç»Ÿé”™è¯¯] {ex.Message}");
+                await Shell.Current.DisplayAlert("é”™è¯¯", "åŠ è½½æ•°æ®æ—¶å‡ºç°å¼‚å¸¸ã€‚", "ç¡®å®š");
             }
         }
-
     }
 }

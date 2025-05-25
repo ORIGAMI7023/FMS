@@ -55,3 +55,6 @@ Accept: application/json
 ### 按月统计人次（2024年5月）
 GET {{FMS.Server_HostAddress}}/api/revenue/statistics/monthly/visitcount?year=2024&month=5
 Accept: application/json
+
+###
+GET http://localhost:7050/api/revenue/statistics/monthly/summary?date=2024-05-05

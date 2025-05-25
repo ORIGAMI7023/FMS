@@ -11,9 +11,9 @@ public class ApiService
     public ApiService()
     {
 #if WINDOWS
-        _httpClient = new HttpClient { BaseAddress = new Uri("https://127.0.0.1:7051") };
+        _httpClient = new HttpClient { BaseAddress = new Uri("http://127.0.0.1:7050") };
 #elif ANDROID
-        _httpClient = new HttpClient { BaseAddress = new Uri("https://192.168.50.203:7051") };
+        _httpClient = new HttpClient { BaseAddress = new Uri("http://192.168.50.203:7050") };
 #else
         _httpClient = new HttpClient { BaseAddress = new Uri("https://localhost:7051") };
 #endif
@@ -22,9 +22,9 @@ public class ApiService
     /// <summary>
     /// 获取指定年月的月度收入摘要
     /// </summary>
-    public async Task<MonthlySummary?> GetMonthlySummaryAsync(int year, int month)
+    public async Task<MonthlySummary?> GetMonthlySummaryAsync(DateOnly date)
     {
-        var response = await _httpClient.GetAsync($"/api/revenue/summary?year={year}&month={month}");
+        var response = await _httpClient.GetAsync($"/api/revenue/summary?date={date}");
         if (response.IsSuccessStatusCode)
         {
             var json = await response.Content.ReadAsStringAsync();
