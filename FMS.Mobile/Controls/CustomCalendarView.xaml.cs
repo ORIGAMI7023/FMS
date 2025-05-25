@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Dispatching;
 
 namespace FMS.Mobile.Controls
 {
@@ -19,6 +18,7 @@ namespace FMS.Mobile.Controls
         }
 
         private DateTime _displayMonth;
+        private readonly List<Button> _buttonPool = new();
         private readonly Dictionary<DateTime, Button> _dateButtons = new();
 
         public CustomCalendarView()
@@ -44,51 +44,58 @@ namespace FMS.Mobile.Controls
         {
             MonthLabel.Text = _displayMonth.ToString("yyyy年M月", CultureInfo.CurrentCulture);
             DateGrid.Children.Clear();
-            DateGrid.RowDefinitions.Clear();
-            DateGrid.ColumnDefinitions.Clear();
             _dateButtons.Clear();
 
-            for (int i = 0; i < 7; i++)
-                DateGrid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-
-            for (int i = 0; i < 6; i++)
-                DateGrid.RowDefinitions.Add(new RowDefinition(GridLength.Star));
+            if (DateGrid.RowDefinitions.Count == 0)
+            {
+                for (int i = 0; i < 6; i++)
+                    DateGrid.RowDefinitions.Add(new RowDefinition(GridLength.Star));
+            }
+            if (DateGrid.ColumnDefinitions.Count == 0)
+            {
+                for (int i = 0; i < 7; i++)
+                    DateGrid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+            }
 
             DateTime firstDay = new DateTime(_displayMonth.Year, _displayMonth.Month, 1);
             int days = DateTime.DaysInMonth(_displayMonth.Year, _displayMonth.Month);
             int col = (int)firstDay.DayOfWeek;
             int row = 0;
 
+            int poolIndex = 0;
+
             for (int i = 1; i <= days; i++)
             {
                 DateTime currentDate = new DateTime(_displayMonth.Year, _displayMonth.Month, i);
+                Button btn;
 
-                var btn = new Button
+                if (poolIndex < _buttonPool.Count)
                 {
-                    Text = i.ToString(),
-                    FontSize = 14,
-                    Padding = 0,
-                    Margin = new Thickness(6),
-                    BackgroundColor = Colors.Transparent,
-                    TextColor = Colors.Black,
-                    CommandParameter = currentDate,
-                    CornerRadius = 9999,
-                    HorizontalOptions = LayoutOptions.Center,
-                    VerticalOptions = LayoutOptions.Center,
-                    WidthRequest = 40,
-                    HeightRequest = 40
-                };
+                    btn = _buttonPool[poolIndex];
+                }
+                else
+                {
+                    btn = new Button
+                    {
+                        FontSize = 14,
+                        Padding = 0,
+                        Margin = new Thickness(6),
+                        CornerRadius = 9999,
+                        HorizontalOptions = LayoutOptions.Center,
+                        VerticalOptions = LayoutOptions.Center,
+                        WidthRequest = 40,
+                        HeightRequest = 40
+                    };
+                    btn.Clicked += OnDateClicked;
+                    _buttonPool.Add(btn);
+                }
 
-                btn.Clicked += (s, e) =>
-                {
-                    SelectedDate = currentDate;
-                    UpdateSelectionVisual();
-                };
+                btn.Text = i.ToString();
+                btn.CommandParameter = currentDate;
 
                 Grid.SetRow(btn, row);
                 Grid.SetColumn(btn, col);
                 DateGrid.Children.Add(btn);
-
                 _dateButtons[currentDate] = btn;
 
                 col++;
@@ -97,6 +104,8 @@ namespace FMS.Mobile.Controls
                     col = 0;
                     row++;
                 }
+
+                poolIndex++;
             }
 
             UpdateSelectionVisual();
@@ -118,6 +127,15 @@ namespace FMS.Mobile.Controls
                     btn.BackgroundColor = Colors.Transparent;
                     btn.TextColor = Colors.Black;
                 }
+            }
+        }
+
+        private void OnDateClicked(object sender, EventArgs e)
+        {
+            if (sender is Button btn && btn.CommandParameter is DateTime dt)
+            {
+                SelectedDate = dt;
+                UpdateSelectionVisual();
             }
         }
     }
