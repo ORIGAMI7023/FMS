@@ -1,4 +1,3 @@
-// 文件：Controls/CustomCalendarView.xaml.cs
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -107,6 +106,11 @@ namespace FMS.Mobile.Controls
 
                 poolIndex++;
             }
+
+            // 默认选中：如果当前月是今天，选今天；否则选1号
+            SelectedDate = (DateTime.Today.Month == _displayMonth.Month && DateTime.Today.Year == _displayMonth.Year)
+                ? DateTime.Today
+                : new DateTime(_displayMonth.Year, _displayMonth.Month, 1);
 
             UpdateSelectionVisual();
         }
