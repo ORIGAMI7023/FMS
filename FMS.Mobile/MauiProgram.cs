@@ -15,6 +15,7 @@ namespace FMS.Mobile
                    {
                        fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                        fonts.AddFont("OpenSans-SemiBold.ttf", "OpenSansSemiBold");
+                       fonts.AddFont("STXIHEI.TTF", "ChineseFont");
                    });
 
 #if DEBUG
