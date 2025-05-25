@@ -39,7 +39,7 @@ namespace FMS.Mobile.ViewModels
 
         private async Task LoadSummaryAsync()
         {
-            var date = SelectedDate;
+            DateOnly date = DateOnly.FromDateTime(SelectedDate);
             try
             {
                 var result = await _apiService.GetMonthlySummaryAsync(date);

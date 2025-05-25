@@ -1,10 +1,9 @@
-﻿namespace FMS.Mobile
+namespace FMS.Mobile;
+
+public partial class AppShell : Shell
 {
-    public partial class AppShell : Shell
+    public AppShell()
     {
-        public AppShell()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }

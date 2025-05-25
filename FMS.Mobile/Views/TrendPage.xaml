@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FMS.Mobile.Views.TrendPage">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="10">
+            <Label Text="趋势图页面（待开发）" FontSize="24" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

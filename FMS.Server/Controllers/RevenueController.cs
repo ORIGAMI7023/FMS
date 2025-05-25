@@ -93,7 +93,7 @@ public class RevenueController : ControllerBase
     /// 获取指定月份的收入统计摘要信息。
     /// </summary>
     /// <returns>包含 指定月度总营收，指定日期营收，指定月月均收入 </returns>
-    [HttpGet("statistics/monthly/summary")]
+    [HttpGet("home/summary")]
     public async Task<ActionResult<MonthlySummaryDto>> GetMonthlySummary(DateOnly date)
     {
         var targetMonthStart = new DateOnly(date.Year, date.Month, 1);  // 获取目标月的第一天
@@ -119,7 +119,13 @@ public class RevenueController : ControllerBase
             .Where(r => r.Date == date)
             .Sum(r => AdjustedValue(r));
 
-        var averageDaily = daysInMonth > 0 ? totalMonthly / daysInMonth : 0;
+        int activeDays = recordsInMonth
+            .Select(r => r.Date)
+            .Distinct()
+            .Count();
+
+        decimal averageDaily = activeDays > 0 ? totalMonthly / activeDays : 0;
+
 
         var result = new MonthlySummaryDto
         {

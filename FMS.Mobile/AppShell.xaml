@@ -4,5 +4,9 @@
        xmlns:views="clr-namespace:FMS.Mobile.Views"
        x:Class="FMS.Mobile.AppShell">
 
-    <ShellContent Title="Dashboard" ContentTemplate="{DataTemplate views:DashboardPage}" />
+    <TabBar>
+        <ShellContent Title="首页" Icon="home.png" ContentTemplate="{DataTemplate views:DashboardPage}" Route="home" />
+        <ShellContent Title="医生" Icon="doctor.png" ContentTemplate="{DataTemplate views:DoctorPage}" Route="doctor" />
+        <ShellContent Title="趋势" Icon="trend.png" ContentTemplate="{DataTemplate views:TrendPage}" Route="trend" />
+    </TabBar>
 </Shell>

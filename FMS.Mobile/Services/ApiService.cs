@@ -24,7 +24,7 @@ public class ApiService
     /// </summary>
     public async Task<MonthlySummary?> GetMonthlySummaryAsync(DateOnly date)
     {
-        var response = await _httpClient.GetAsync($"/api/revenue/summary?date={date}");
+        var response = await _httpClient.GetAsync($"/api/revenue/home/summary?date={date}");
         if (response.IsSuccessStatusCode)
         {
             var json = await response.Content.ReadAsStringAsync();
