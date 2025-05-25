@@ -132,13 +132,15 @@ namespace FMS.Server
             // ʽ󶨼˿
             builder.WebHost.ConfigureKestrel(options =>
             {
-                options.ListenAnyIP(7050); // ȷ󶨵 0.0.0.0:7050
+                options.ListenAnyIP(7050); // HTTP
+                options.ListenAnyIP(7051, listenOptions =>
+                {
+                    listenOptions.UseHttps(); // ÿ֤ HTTPS
+                });
             });
 
-            var app = builder.Build();
 
-            // üַలȫдɱ
-            app.Urls.Add("http://0.0.0.0:7050");
+            var app = builder.Build();
 
             //  Swagger
             if (app.Environment.IsDevelopment())
