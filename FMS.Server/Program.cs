@@ -19,13 +19,15 @@ namespace FMS.Server
             // 显式绑定监听端口
             builder.WebHost.ConfigureKestrel(options =>
             {
-                options.ListenAnyIP(7050); // 明确绑定到 0.0.0.0:7050
+                options.ListenAnyIP(7050); // HTTP
+                options.ListenAnyIP(7051, listenOptions =>
+                {
+                    listenOptions.UseHttps(); // 启用开发证书的 HTTPS
+                });
             });
 
-            var app = builder.Build();
 
-            // 配置监听地址（冗余安全写法，可保留）
-            app.Urls.Add("http://0.0.0.0:7050");
+            var app = builder.Build();
 
             // 开发环境中启用 Swagger
             if (app.Environment.IsDevelopment())
