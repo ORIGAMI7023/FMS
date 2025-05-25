@@ -33,21 +33,23 @@
        xmlns:views="clr-namespace:FMS.Mobile.Views"
        x:Class="FMS.Mobile.AppShell">
 
-    <ShellContent Title="Dashboard" ContentTemplate="{DataTemplate views:DashboardPage}" />
+    <TabBar>
+        <ShellContent Title="首页" Icon="home.png" ContentTemplate="{DataTemplate views:DashboardPage}" Route="home" />
+        <ShellContent Title="医生" Icon="doctor.png" ContentTemplate="{DataTemplate views:DoctorPage}" Route="doctor" />
+        <ShellContent Title="趋势" Icon="trend.png" ContentTemplate="{DataTemplate views:TrendPage}" Route="trend" />
+    </TabBar>
 </Shell>
 
 # --- AppShell.xaml.cs ---
-﻿namespace FMS.Mobile
+namespace FMS.Mobile;
+
+public partial class AppShell : Shell
 {
-    public partial class AppShell : Shell
+    public AppShell()
     {
-        public AppShell()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }
-
 
 # --- FMS.Mobile.csproj ---
 ﻿<Project Sdk="Microsoft.NET.Sdk">
@@ -817,9 +819,9 @@ public class ApiService
     public ApiService()
     {
 #if WINDOWS
-        _httpClient = new HttpClient { BaseAddress = new Uri("https://127.0.0.1:7051") };
+        _httpClient = new HttpClient { BaseAddress = new Uri("http://127.0.0.1:7050") };
 #elif ANDROID
-        _httpClient = new HttpClient { BaseAddress = new Uri("https://192.168.50.203:7051") };
+        _httpClient = new HttpClient { BaseAddress = new Uri("http://192.168.50.203:7050") };
 #else
         _httpClient = new HttpClient { BaseAddress = new Uri("https://localhost:7051") };
 #endif
@@ -828,9 +830,9 @@ public class ApiService
     /// <summary>
     /// ȡָµ¶ժҪ
     /// </summary>
-    public async Task<MonthlySummary?> GetMonthlySummaryAsync(int year, int month)
+    public async Task<MonthlySummary?> GetMonthlySummaryAsync(DateOnly date)
     {
-        var response = await _httpClient.GetAsync($"/api/revenue/summary?year={year}&month={month}");
+        var response = await _httpClient.GetAsync($"/api/revenue/home/summary?date={date}");
         if (response.IsSuccessStatusCode)
         {
             var json = await response.Content.ReadAsStringAsync();
@@ -866,22 +868,29 @@ namespace FMS.Mobile.ViewModels
         [ObservableProperty]
         private decimal averageDaily;
 
+        [ObservableProperty]
+        private DateTime selectedDate = DateTime.Today;
+
         public DashboardViewModel()
         {
             _apiService = new ApiService();
             LoadSummaryCommand = new AsyncRelayCommand(LoadSummaryAsync);
+            LoadSummaryAsync();//初始化获取数据
         }
 
         public IAsyncRelayCommand LoadSummaryCommand { get; }
 
+        partial void OnSelectedDateChanged(DateTime value)
+        {
+            LoadSummaryCommand.Execute(null);
+        }
+
         private async Task LoadSummaryAsync()
         {
-            var now = DateTime.Now;
-
+            DateOnly date = DateOnly.FromDateTime(SelectedDate);
             try
             {
-                var result = await _apiService.GetMonthlySummaryAsync(now.Year, now.Month);
-
+                var result = await _apiService.GetMonthlySummaryAsync(date);
                 if (result != null)
                 {
                     TotalMonthly = result.TotalMonthly;
@@ -893,26 +902,24 @@ namespace FMS.Mobile.ViewModels
                     TotalMonthly = 0;
                     TotalToday = 0;
                     AverageDaily = 0;
+
+                    await Shell.Current.DisplayAlert("错误", "指定日期查询结果为空", "确定");
                 }
             }
             catch (HttpRequestException ex)
             {
-                // 񲻿ɴ
-                Console.WriteLine($"[] {ex.Message}");
-                await Shell.Current.DisplayAlert("", "޷ӵǷС", "ȷ");
-
+                Console.WriteLine($"[网络错误] {ex.Message}");
+                await Shell.Current.DisplayAlert("错误", "无法连接到服务器，请检查网络或服务是否运行。", "确定");
                 TotalMonthly = 0;
                 TotalToday = 0;
                 AverageDaily = 0;
             }
             catch (Exception ex)
             {
-                // δ쳣
-                Console.WriteLine($"[ϵͳ] {ex.Message}");
-                await Shell.Current.DisplayAlert("", "ʱ쳣", "ȷ");
+                Console.WriteLine($"[系统错误] {ex.Message}");
+                await Shell.Current.DisplayAlert("错误", "加载数据时出现异常。", "确定");
             }
         }
-
     }
 }
 
@@ -922,6 +929,7 @@ namespace FMS.Mobile.ViewModels
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodels="clr-namespace:FMS.Mobile.ViewModels"
+             xmlns:sys="clr-namespace:System;assembly=netstandard"
              x:Class="FMS.Mobile.Views.DashboardPage">
 
     <ContentPage.BindingContext>
@@ -930,6 +938,12 @@ namespace FMS.Mobile.ViewModels
 
     <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="20">
+
+            <DatePicker
+                Date="{Binding SelectedDate}"
+                Format="yyyy年MM月"
+                MaximumDate="{x:Static sys:DateTime.Now}"
+                HorizontalOptions="Center" />
 
             <Label Text="月度总营收" FontSize="18" />
             <Label Text="{Binding TotalMonthly, StringFormat='{}{0:C}'}" FontSize="24" FontAttributes="Bold" />
@@ -947,8 +961,6 @@ namespace FMS.Mobile.ViewModels
 
 # --- Views\DashboardPage.xaml.cs ---
 
-using FMS.Mobile.ViewModels;
-
 namespace FMS.Mobile.Views;
 
 public partial class DashboardPage : ContentPage
@@ -956,12 +968,52 @@ public partial class DashboardPage : ContentPage
     public DashboardPage()
     {
         InitializeComponent();
-        Loaded += async (s, e) =>
-        {
-            if (BindingContext is DashboardViewModel vm)
-            {
-                await vm.LoadSummaryCommand.ExecuteAsync(null);
-            }
-        };
+    }
+}
+
+
+# --- Views\DoctorPage.xaml ---
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FMS.Mobile.Views.DoctorPage">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="10">
+            <Label Text="医生营收页面（待开发）" FontSize="24" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
+
+# --- Views\DoctorPage.xaml.cs ---
+namespace FMS.Mobile.Views;
+
+public partial class DoctorPage : ContentPage
+{
+    public DoctorPage()
+    {
+        InitializeComponent();
+    }
+}
+
+# --- Views\TrendPage.xaml ---
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FMS.Mobile.Views.TrendPage">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="10">
+            <Label Text="趋势图页面（待开发）" FontSize="24" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
+
+# --- Views\TrendPage.xaml.cs ---
+namespace FMS.Mobile.Views;
+
+public partial class TrendPage : ContentPage
+{
+    public TrendPage()
+    {
+        InitializeComponent();
     }
 }

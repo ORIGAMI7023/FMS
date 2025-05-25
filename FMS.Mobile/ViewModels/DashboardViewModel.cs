@@ -28,6 +28,7 @@ namespace FMS.Mobile.ViewModels
         {
             _apiService = new ApiService();
             LoadSummaryCommand = new AsyncRelayCommand(LoadSummaryAsync);
+            LoadSummaryAsync();//初始化获取数据
         }
 
         public IAsyncRelayCommand LoadSummaryCommand { get; }
@@ -48,18 +49,14 @@ namespace FMS.Mobile.ViewModels
                     TotalMonthly = result.TotalMonthly;
                     TotalToday = result.TotalToday;
                     AverageDaily = result.AverageDaily;
-                }
-                else
-                {
-                    TotalMonthly = 0;
-                    TotalToday = 0;
-                    AverageDaily = 0;
+                    if (TotalToday == 0 && date == DateOnly.FromDateTime(DateTime.Now))
+                        await Shell.Current.DisplayAlert("提示", "今天还没有收入记录，请稍后查看。", "确定");
                 }
             }
             catch (HttpRequestException ex)
             {
                 Console.WriteLine($"[网络错误] {ex.Message}");
-                await Shell.Current.DisplayAlert("错误", "无法连接到服务器，请检查网络或服务是否运行。", "确定");
+                await Shell.Current.DisplayAlert("错误", $"无法连接到服务器。{ex.Message}", "确定");
                 TotalMonthly = 0;
                 TotalToday = 0;
                 AverageDaily = 0;

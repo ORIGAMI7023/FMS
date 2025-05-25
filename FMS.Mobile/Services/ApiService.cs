@@ -30,7 +30,10 @@ public class ApiService
             var json = await response.Content.ReadAsStringAsync();
             return JsonConvert.DeserializeObject<MonthlySummary>(json);
         }
-        return null;
+        else
+        {
+            throw new HttpRequestException($"«Î«Û ß∞‹: {response.StatusCode} - {response.ReasonPhrase}");
+        }
     }
 
 }
