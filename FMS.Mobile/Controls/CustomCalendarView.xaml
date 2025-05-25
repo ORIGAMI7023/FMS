@@ -8,7 +8,11 @@
         <!-- 年月切换控件 -->
         <Grid ColumnDefinitions="Auto,*,Auto" Padding="10" VerticalOptions="Center">
             <Button Text="&lt;" Clicked="OnPrevMonthClicked" />
-            <Label x:Name="MonthLabel" FontSize="18" HorizontalOptions="Center" Grid.Column="1" />
+            <Label x:Name="MonthLabel" FontSize="18" HorizontalOptions="Center" Grid.Column="1">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnMonthLabelTapped" />
+                </Label.GestureRecognizers>
+            </Label>
             <Button Text=">" Clicked="OnNextMonthClicked" Grid.Column="2" />
         </Grid>
 

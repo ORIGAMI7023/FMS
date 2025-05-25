@@ -1,3 +1,4 @@
+// 文件：Controls/CustomCalendarView.xaml.cs
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -37,6 +38,21 @@ namespace FMS.Mobile.Controls
         {
             _displayMonth = _displayMonth.AddMonths(1);
             BuildCalendar();
+        }
+
+        private async void OnMonthLabelTapped(object sender, EventArgs e)
+        {
+            var yearList = new List<string>();
+            int currentYear = DateTime.Now.Year;
+            for (int y = 2024; y <= currentYear; y++)
+                yearList.Add(y.ToString());
+
+            string selected = await Shell.Current.DisplayActionSheet("选择年份", "取消", null, yearList.ToArray());
+            if (int.TryParse(selected, out int year))
+            {
+                _displayMonth = new DateTime(year, _displayMonth.Month, 1);
+                BuildCalendar();
+            }
         }
 
         private void BuildCalendar()
@@ -107,7 +123,6 @@ namespace FMS.Mobile.Controls
                 poolIndex++;
             }
 
-            // 默认选中：如果当前月是今天，选今天；否则选1号
             SelectedDate = (DateTime.Today.Month == _displayMonth.Month && DateTime.Today.Year == _displayMonth.Year)
                 ? DateTime.Today
                 : new DateTime(_displayMonth.Year, _displayMonth.Month, 1);
