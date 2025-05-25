@@ -9,8 +9,15 @@ target_exts = [".cs", ".xaml", ".json", ".xml", ".plist", ".svg", ".csproj"]
 
 # 子目录中允许遍历的目标文件夹
 target_folders = [
-    "Converters", "Models", "Platforms", "Properties",
-    "Resources", "Services", "ViewModels", "Views"
+    "Converters",
+    "Models",
+    "Platforms",
+    "Properties",
+    "Resources",
+    "Services",
+    "ViewModels",
+    "Views",
+    "Controls",
 ]
 
 with open(output_file, "w", encoding="utf-8") as out:
@@ -26,9 +33,10 @@ with open(output_file, "w", encoding="utf-8") as out:
 
             # 根目录允许所有 target_exts
             # 子目录仅输出 .cs/.xaml/.xml/.json 等源码/配置文件
-            if ((rel_dir == "." and ext in target_exts) or
-                (rel_dir != "." and ext in target_exts)):
-                
+            if (rel_dir == "." and ext in target_exts) or (
+                rel_dir != "." and ext in target_exts
+            ):
+
                 file_path = os.path.join(dirpath, filename)
                 rel_path = os.path.relpath(file_path, root_dir)
                 out.write(f"\n\n# --- {rel_path} ---\n")

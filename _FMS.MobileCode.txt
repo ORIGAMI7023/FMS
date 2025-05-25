@@ -35,8 +35,8 @@
 
     <TabBar>
         <ShellContent Title="首页" Icon="home.png" ContentTemplate="{DataTemplate views:DashboardPage}" Route="home" />
-        <ShellContent Title="医生" Icon="doctor.png" ContentTemplate="{DataTemplate views:DoctorPage}" Route="doctor" />
         <ShellContent Title="趋势" Icon="trend.png" ContentTemplate="{DataTemplate views:TrendPage}" Route="trend" />
+        <ShellContent Title="医生" Icon="doctor.png" ContentTemplate="{DataTemplate views:DoctorPage}" Route="doctor" />
     </TabBar>
 </Shell>
 
@@ -55,8 +55,7 @@ public partial class AppShell : Shell
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net8.0-android</TargetFrameworks>
-		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net8.0-windows10.0.19041.0</TargetFrameworks>
+		<TargetFrameworks>net9.0-android35.0;net9.0-windows10.0.19041.0</TargetFrameworks>
 		<!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
 		<!-- <TargetFrameworks>$(TargetFrameworks);net8.0-tizen</TargetFrameworks> -->
 
@@ -114,15 +113,19 @@ public partial class AppShell : Shell
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="Plugin.Maui.Calendar" Version="2.0.5" />
 		<PackageReference Include="SkiaSharp" Version="2.88.6" />
 		<PackageReference Include="SkiaSharp.Views.Maui.Controls" Version="2.88.6" />
+		<PackageReference Include="CommunityToolkit.Maui" Version="5.2.0" />
+
 	</ItemGroup>
 
 </Project>
 	
 
 # --- MauiProgram.cs ---
-﻿using Microcharts.Maui;
+﻿using CommunityToolkit.Maui;
+using Microcharts.Maui;
 using Microsoft.Extensions.Logging;
 
 namespace FMS.Mobile
@@ -135,6 +138,7 @@ namespace FMS.Mobile
             builder
                    .UseMauiApp<App>()
                    .UseMicrocharts()
+                   .UseMauiCommunityToolkit()
                    .ConfigureFonts(fonts =>
                    {
                        fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -838,7 +842,10 @@ public class ApiService
             var json = await response.Content.ReadAsStringAsync();
             return JsonConvert.DeserializeObject<MonthlySummary>(json);
         }
-        return null;
+        else
+        {
+            throw new HttpRequestException($"ʧ: {response.StatusCode} - {response.ReasonPhrase}");
+        }
     }
 
 }
@@ -871,6 +878,7 @@ namespace FMS.Mobile.ViewModels
         [ObservableProperty]
         private DateTime selectedDate = DateTime.Today;
 
+
         public DashboardViewModel()
         {
             _apiService = new ApiService();
@@ -896,20 +904,14 @@ namespace FMS.Mobile.ViewModels
                     TotalMonthly = result.TotalMonthly;
                     TotalToday = result.TotalToday;
                     AverageDaily = result.AverageDaily;
-                }
-                else
-                {
-                    TotalMonthly = 0;
-                    TotalToday = 0;
-                    AverageDaily = 0;
-
-                    await Shell.Current.DisplayAlert("错误", "指定日期查询结果为空", "确定");
+                    if (TotalToday == 0 && date == DateOnly.FromDateTime(DateTime.Now))
+                        await Shell.Current.DisplayAlert("提示", "今天还没有收入记录，请稍后查看。", "确定");
                 }
             }
             catch (HttpRequestException ex)
             {
                 Console.WriteLine($"[网络错误] {ex.Message}");
-                await Shell.Current.DisplayAlert("错误", "无法连接到服务器，请检查网络或服务是否运行。", "确定");
+                await Shell.Current.DisplayAlert("错误", $"无法连接到服务器。{ex.Message}", "确定");
                 TotalMonthly = 0;
                 TotalToday = 0;
                 AverageDaily = 0;
@@ -921,6 +923,9 @@ namespace FMS.Mobile.ViewModels
             }
         }
     }
+
+
+
 }
 
 
@@ -930,6 +935,9 @@ namespace FMS.Mobile.ViewModels
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodels="clr-namespace:FMS.Mobile.ViewModels"
              xmlns:sys="clr-namespace:System;assembly=netstandard"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:views="clr-namespace:CommunityToolkit.Maui.Views;assembly=CommunityToolkit.Maui"
+             xmlns:calendar="clr-namespace:Plugin.Maui.Calendar.Controls;assembly=Plugin.Maui.Calendar"
              x:Class="FMS.Mobile.Views.DashboardPage">
 
     <ContentPage.BindingContext>
@@ -937,23 +945,22 @@ namespace FMS.Mobile.ViewModels
     </ContentPage.BindingContext>
 
     <ScrollView>
-        <VerticalStackLayout Padding="20" Spacing="20">
-
-            <DatePicker
-                Date="{Binding SelectedDate}"
-                Format="yyyy年MM月"
-                MaximumDate="{x:Static sys:DateTime.Now}"
-                HorizontalOptions="Center" />
+        <VerticalStackLayout Padding="18" Spacing="8">
 
             <Label Text="月度总营收" FontSize="18" />
-            <Label Text="{Binding TotalMonthly, StringFormat='{}{0:C}'}" FontSize="24" FontAttributes="Bold" />
+            <Label Text="{Binding TotalMonthly, StringFormat='{}{0:C}'}" FontSize="24" FontAttributes="Bold" Margin="0,0,0,3"/>
 
             <Label Text="今日总营收" FontSize="18" />
-            <Label Text="{Binding TotalToday, StringFormat='{}{0:C}'}" FontSize="24" FontAttributes="Bold" />
+            <Label Text="{Binding TotalToday, StringFormat='{}{0:C}'}" FontSize="24" FontAttributes="Bold" Margin="0,0,0,3"/>
 
             <Label Text="本月日均营收" FontSize="18" />
-            <Label Text="{Binding AverageDaily, StringFormat='{}{0:C}'}" FontSize="24" FontAttributes="Bold" />
+            <Label Text="{Binding AverageDaily, StringFormat='{}{0:C}'}" FontSize="24" FontAttributes="Bold" Margin="0,0,0,3"/>
 
+            <calendar:Calendar
+                SelectedDate="{Binding SelectedDate, Mode=TwoWay}"
+                HorizontalOptions="Center"
+                TodayFillColor="#f0f0f0"
+                Culture="zh-CN" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

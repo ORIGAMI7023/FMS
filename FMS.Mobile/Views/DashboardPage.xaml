@@ -5,7 +5,7 @@
              xmlns:sys="clr-namespace:System;assembly=netstandard"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              xmlns:views="clr-namespace:CommunityToolkit.Maui.Views;assembly=CommunityToolkit.Maui"
-             xmlns:calendar="clr-namespace:Plugin.Maui.Calendar.Controls;assembly=Plugin.Maui.Calendar"
+             xmlns:controls="clr-namespace:FMS.Mobile.Controls"
              x:Class="FMS.Mobile.Views.DashboardPage">
 
     <ContentPage.BindingContext>
@@ -24,11 +24,10 @@
             <Label Text="本月日均营收" FontSize="18" />
             <Label Text="{Binding AverageDaily, StringFormat='{}{0:C}'}" FontSize="24" FontAttributes="Bold" Margin="0,0,0,3"/>
 
-            <calendar:Calendar
-                SelectedDate="{Binding SelectedDate, Mode=TwoWay}"
-                HorizontalOptions="Center"
-                TodayFillColor="#f0f0f0"
-                Culture="zh-CN" />
+
+            <controls:CustomCalendarView SelectedDate="{Binding SelectedDate}" />
+
+
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>
