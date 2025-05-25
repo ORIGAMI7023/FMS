@@ -18,13 +18,13 @@
 
         <!-- 星期标题 -->
         <Grid ColumnDefinitions="*,*,*,*,*,*,*" Padding="5">
-            <Label Text="日" HorizontalTextAlignment="Center" />
-            <Label Text="一" HorizontalTextAlignment="Center" Grid.Column="1" />
-            <Label Text="二" HorizontalTextAlignment="Center" Grid.Column="2" />
-            <Label Text="三" HorizontalTextAlignment="Center" Grid.Column="3" />
-            <Label Text="四" HorizontalTextAlignment="Center" Grid.Column="4" />
-            <Label Text="五" HorizontalTextAlignment="Center" Grid.Column="5" />
-            <Label Text="六" HorizontalTextAlignment="Center" Grid.Column="6" />
+            <Label Text="日" HorizontalTextAlignment="Center" FontSize="13" />
+            <Label Text="一" HorizontalTextAlignment="Center" FontSize="13" Grid.Column="1" />
+            <Label Text="二" HorizontalTextAlignment="Center" FontSize="13" Grid.Column="2" />
+            <Label Text="三" HorizontalTextAlignment="Center" FontSize="13" Grid.Column="3" />
+            <Label Text="四" HorizontalTextAlignment="Center" FontSize="13" Grid.Column="4" />
+            <Label Text="五" HorizontalTextAlignment="Center" FontSize="13" Grid.Column="5" />
+            <Label Text="六" HorizontalTextAlignment="Center" FontSize="13" Grid.Column="6" />
         </Grid>
 
         <!-- 日期网格 -->

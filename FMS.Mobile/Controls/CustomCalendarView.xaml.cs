@@ -44,7 +44,7 @@ namespace FMS.Mobile.Controls
         {
             var yearList = new List<string>();
             int currentYear = DateTime.Now.Year;
-            for (int y = 2024; y <= currentYear; y++)
+            for (int y = currentYear - 10; y <= currentYear + 10; y++)
                 yearList.Add(y.ToString());
 
             string selected = await Shell.Current.DisplayActionSheet("选择年份", "取消", null, yearList.ToArray());
@@ -92,7 +92,7 @@ namespace FMS.Mobile.Controls
                 {
                     btn = new Button
                     {
-                        FontSize = 14,
+                        FontSize = 18,
                         Padding = 0,
                         Margin = new Thickness(6),
                         CornerRadius = 9999,
@@ -138,8 +138,13 @@ namespace FMS.Mobile.Controls
                 var date = kvp.Key;
                 if (date.Date == SelectedDate.Date)
                 {
-                    btn.BackgroundColor = Colors.LightBlue;
+                    btn.BackgroundColor = (date.Date == DateTime.Today.Date) ? Application.Current.Resources["Primary"] as Color : Colors.LightBlue;
                     btn.TextColor = Colors.White;
+                }
+                else if (date.Date == DateTime.Today.Date)
+                {
+                    btn.BackgroundColor = Colors.Transparent;
+                    btn.TextColor = Colors.Red;
                 }
                 else
                 {

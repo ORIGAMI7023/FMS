@@ -5,7 +5,7 @@
        x:Class="FMS.Mobile.AppShell">
 
     <TabBar>
-        <ShellContent Title="首页" Icon="home.png" ContentTemplate="{DataTemplate views:DashboardPage}" Route="home" />
+        <ShellContent Title="总览" Icon="home.png" ContentTemplate="{DataTemplate views:DashboardPage}" Route="home" />
         <ShellContent Title="趋势" Icon="trend.png" ContentTemplate="{DataTemplate views:TrendPage}" Route="trend" />
         <ShellContent Title="医生" Icon="doctor.png" ContentTemplate="{DataTemplate views:DoctorPage}" Route="doctor" />
     </TabBar>
