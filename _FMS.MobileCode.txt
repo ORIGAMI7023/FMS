@@ -8,17 +8,23 @@
              x:Class="FMS.Mobile.App">
     <Application.Resources>
         <converters:ZeroToVisibleConverter x:Key="ZeroToVisibleConverter" />
+        <Color x:Key="Primary">#512BD4</Color>
     </Application.Resources>
 </Application>
 
 # --- App.xaml.cs ---
-﻿namespace FMS.Mobile
+﻿using System.Globalization;
+
+namespace FMS.Mobile
 {
     public partial class App : Application
     {
         public App()
         {
             InitializeComponent();
+
+            CultureInfo.CurrentCulture = new CultureInfo("zh-CN");
+            CultureInfo.CurrentUICulture = new CultureInfo("zh-CN");
 
             MainPage = new AppShell();
         }
@@ -34,7 +40,7 @@
        x:Class="FMS.Mobile.AppShell">
 
     <TabBar>
-        <ShellContent Title="首页" Icon="home.png" ContentTemplate="{DataTemplate views:DashboardPage}" Route="home" />
+        <ShellContent Title="总览" Icon="home.png" ContentTemplate="{DataTemplate views:DashboardPage}" Route="home" />
         <ShellContent Title="趋势" Icon="trend.png" ContentTemplate="{DataTemplate views:TrendPage}" Route="trend" />
         <ShellContent Title="医生" Icon="doctor.png" ContentTemplate="{DataTemplate views:DoctorPage}" Route="doctor" />
     </TabBar>
@@ -113,7 +119,6 @@ public partial class AppShell : Shell
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-		<PackageReference Include="Plugin.Maui.Calendar" Version="2.0.5" />
 		<PackageReference Include="SkiaSharp" Version="2.88.6" />
 		<PackageReference Include="SkiaSharp.Views.Maui.Controls" Version="2.88.6" />
 		<PackageReference Include="CommunityToolkit.Maui" Version="5.2.0" />
@@ -135,22 +140,228 @@ namespace FMS.Mobile
         public static MauiApp CreateMauiApp()
         {
             var builder = MauiApp.CreateBuilder();
+
             builder
-                   .UseMauiApp<App>()
-                   .UseMicrocharts()
-                   .UseMauiCommunityToolkit()
-                   .ConfigureFonts(fonts =>
-                   {
-                       fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-                       fonts.AddFont("OpenSans-SemiBold.ttf", "OpenSansSemiBold");
-                       fonts.AddFont("STXIHEI.TTF", "ChineseFont");
-                   });
+                .UseMauiApp<App>()
+                .UseMicrocharts()
+                .UseMauiCommunityToolkit()
+                .ConfigureFonts(fonts =>
+                {
+                    fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+                    fonts.AddFont("OpenSans-SemiBold.ttf", "OpenSansSemiBold");
+                    fonts.AddFont("STXIHEI.TTF", "ChineseFont");
+                });
 
 #if DEBUG
             builder.Logging.AddDebug();
 #endif
 
             return builder.Build();
+        }
+    }
+}
+
+
+# --- Controls\CustomCalendarView.xaml ---
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FMS.Mobile.Controls.CustomCalendarView"
+             x:Name="CalendarRoot">
+
+    <VerticalStackLayout>
+        <!-- 年月切换控件 -->
+        <Grid ColumnDefinitions="Auto,*,Auto" Padding="10" VerticalOptions="Center">
+            <Button Text="&lt;" Clicked="OnPrevMonthClicked" />
+            <Label x:Name="MonthLabel" FontSize="18" HorizontalOptions="Center" Grid.Column="1">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnMonthLabelTapped" />
+                </Label.GestureRecognizers>
+            </Label>
+            <Button Text=">" Clicked="OnNextMonthClicked" Grid.Column="2" />
+        </Grid>
+
+        <!-- 星期标题 -->
+        <Grid ColumnDefinitions="*,*,*,*,*,*,*" Padding="5">
+            <Label Text="日" HorizontalTextAlignment="Center" FontSize="13" />
+            <Label Text="一" HorizontalTextAlignment="Center" FontSize="13" Grid.Column="1" />
+            <Label Text="二" HorizontalTextAlignment="Center" FontSize="13" Grid.Column="2" />
+            <Label Text="三" HorizontalTextAlignment="Center" FontSize="13" Grid.Column="3" />
+            <Label Text="四" HorizontalTextAlignment="Center" FontSize="13" Grid.Column="4" />
+            <Label Text="五" HorizontalTextAlignment="Center" FontSize="13" Grid.Column="5" />
+            <Label Text="六" HorizontalTextAlignment="Center" FontSize="13" Grid.Column="6" />
+        </Grid>
+
+        <!-- 日期网格 -->
+        <Grid x:Name="DateGrid" Padding="5" RowSpacing="5" ColumnSpacing="5" />
+    </VerticalStackLayout>
+</ContentView>
+
+
+# --- Controls\CustomCalendarView.xaml.cs ---
+// 文件：Controls/CustomCalendarView.xaml.cs
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using Microsoft.Maui.Controls;
+
+namespace FMS.Mobile.Controls
+{
+    public partial class CustomCalendarView : ContentView
+    {
+        public static readonly BindableProperty SelectedDateProperty =
+            BindableProperty.Create(nameof(SelectedDate), typeof(DateTime), typeof(CustomCalendarView), DateTime.Today, BindingMode.TwoWay);
+
+        public DateTime SelectedDate
+        {
+            get => (DateTime)GetValue(SelectedDateProperty);
+            set => SetValue(SelectedDateProperty, value);
+        }
+
+        private DateTime _displayMonth;
+        private readonly List<Button> _buttonPool = new();
+        private readonly Dictionary<DateTime, Button> _dateButtons = new();
+
+        public CustomCalendarView()
+        {
+            InitializeComponent();
+            _displayMonth = new DateTime(SelectedDate.Year, SelectedDate.Month, 1);
+            BuildCalendar();
+        }
+
+        private void OnPrevMonthClicked(object sender, EventArgs e)
+        {
+            _displayMonth = _displayMonth.AddMonths(-1);
+            BuildCalendar();
+        }
+
+        private void OnNextMonthClicked(object sender, EventArgs e)
+        {
+            _displayMonth = _displayMonth.AddMonths(1);
+            BuildCalendar();
+        }
+
+        private async void OnMonthLabelTapped(object sender, EventArgs e)
+        {
+            var yearList = new List<string>();
+            int currentYear = DateTime.Now.Year;
+            for (int y = currentYear - 10; y <= currentYear + 10; y++)
+                yearList.Add(y.ToString());
+
+            string selected = await Shell.Current.DisplayActionSheet("选择年份", "取消", null, yearList.ToArray());
+            if (int.TryParse(selected, out int year))
+            {
+                _displayMonth = new DateTime(year, _displayMonth.Month, 1);
+                BuildCalendar();
+            }
+        }
+
+        private void BuildCalendar()
+        {
+            MonthLabel.Text = _displayMonth.ToString("yyyy年M月", CultureInfo.CurrentCulture);
+            DateGrid.Children.Clear();
+            _dateButtons.Clear();
+
+            if (DateGrid.RowDefinitions.Count == 0)
+            {
+                for (int i = 0; i < 6; i++)
+                    DateGrid.RowDefinitions.Add(new RowDefinition(GridLength.Star));
+            }
+            if (DateGrid.ColumnDefinitions.Count == 0)
+            {
+                for (int i = 0; i < 7; i++)
+                    DateGrid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+            }
+
+            DateTime firstDay = new DateTime(_displayMonth.Year, _displayMonth.Month, 1);
+            int days = DateTime.DaysInMonth(_displayMonth.Year, _displayMonth.Month);
+            int col = (int)firstDay.DayOfWeek;
+            int row = 0;
+
+            int poolIndex = 0;
+
+            for (int i = 1; i <= days; i++)
+            {
+                DateTime currentDate = new DateTime(_displayMonth.Year, _displayMonth.Month, i);
+                Button btn;
+
+                if (poolIndex < _buttonPool.Count)
+                {
+                    btn = _buttonPool[poolIndex];
+                }
+                else
+                {
+                    btn = new Button
+                    {
+                        FontSize = 18,
+                        Padding = 0,
+                        Margin = new Thickness(6),
+                        CornerRadius = 9999,
+                        HorizontalOptions = LayoutOptions.Center,
+                        VerticalOptions = LayoutOptions.Center,
+                        WidthRequest = 40,
+                        HeightRequest = 40
+                    };
+                    btn.Clicked += OnDateClicked;
+                    _buttonPool.Add(btn);
+                }
+
+                btn.Text = i.ToString();
+                btn.CommandParameter = currentDate;
+
+                Grid.SetRow(btn, row);
+                Grid.SetColumn(btn, col);
+                DateGrid.Children.Add(btn);
+                _dateButtons[currentDate] = btn;
+
+                col++;
+                if (col > 6)
+                {
+                    col = 0;
+                    row++;
+                }
+
+                poolIndex++;
+            }
+
+            SelectedDate = (DateTime.Today.Month == _displayMonth.Month && DateTime.Today.Year == _displayMonth.Year)
+                ? DateTime.Today
+                : new DateTime(_displayMonth.Year, _displayMonth.Month, 1);
+
+            UpdateSelectionVisual();
+        }
+
+        private void UpdateSelectionVisual()
+        {
+            foreach (var kvp in _dateButtons)
+            {
+                var btn = kvp.Value;
+                var date = kvp.Key;
+                if (date.Date == SelectedDate.Date)
+                {
+                    btn.BackgroundColor = (date.Date == DateTime.Today.Date) ? Application.Current.Resources["Primary"] as Color : Colors.LightBlue;
+                    btn.TextColor = Colors.White;
+                }
+                else if (date.Date == DateTime.Today.Date)
+                {
+                    btn.BackgroundColor = Colors.Transparent;
+                    btn.TextColor = Colors.Red;
+                }
+                else
+                {
+                    btn.BackgroundColor = Colors.Transparent;
+                    btn.TextColor = Colors.Black;
+                }
+            }
+        }
+
+        private void OnDateClicked(object sender, EventArgs e)
+        {
+            if (sender is Button btn && btn.CommandParameter is DateTime dt)
+            {
+                SelectedDate = dt;
+                UpdateSelectionVisual();
+            }
         }
     }
 }
@@ -882,15 +1093,13 @@ namespace FMS.Mobile.ViewModels
         public DashboardViewModel()
         {
             _apiService = new ApiService();
-            LoadSummaryCommand = new AsyncRelayCommand(LoadSummaryAsync);
             LoadSummaryAsync();//初始化获取数据
         }
 
-        public IAsyncRelayCommand LoadSummaryCommand { get; }
 
         partial void OnSelectedDateChanged(DateTime value)
         {
-            LoadSummaryCommand.Execute(null);
+            LoadSummaryAsync();
         }
 
         private async Task LoadSummaryAsync()
@@ -937,7 +1146,7 @@ namespace FMS.Mobile.ViewModels
              xmlns:sys="clr-namespace:System;assembly=netstandard"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              xmlns:views="clr-namespace:CommunityToolkit.Maui.Views;assembly=CommunityToolkit.Maui"
-             xmlns:calendar="clr-namespace:Plugin.Maui.Calendar.Controls;assembly=Plugin.Maui.Calendar"
+             xmlns:controls="clr-namespace:FMS.Mobile.Controls"
              x:Class="FMS.Mobile.Views.DashboardPage">
 
     <ContentPage.BindingContext>
@@ -956,11 +1165,10 @@ namespace FMS.Mobile.ViewModels
             <Label Text="本月日均营收" FontSize="18" />
             <Label Text="{Binding AverageDaily, StringFormat='{}{0:C}'}" FontSize="24" FontAttributes="Bold" Margin="0,0,0,3"/>
 
-            <calendar:Calendar
-                SelectedDate="{Binding SelectedDate, Mode=TwoWay}"
-                HorizontalOptions="Center"
-                TodayFillColor="#f0f0f0"
-                Culture="zh-CN" />
+
+            <controls:CustomCalendarView SelectedDate="{Binding SelectedDate}" />
+
+
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

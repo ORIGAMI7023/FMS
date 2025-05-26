@@ -44,7 +44,7 @@ namespace FMS.Mobile.Controls
         {
             var yearList = new List<string>();
             int currentYear = DateTime.Now.Year;
-            for (int y = currentYear - 10; y <= currentYear + 10; y++)
+            for (int y = 2024; y <= currentYear; y++)
                 yearList.Add(y.ToString());
 
             string selected = await Shell.Current.DisplayActionSheet("选择年份", "取消", null, yearList.ToArray());
