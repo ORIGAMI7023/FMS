@@ -14,6 +14,7 @@ public class ApiService
         _httpClient = new HttpClient { BaseAddress = new Uri("http://127.0.0.1:7050") };
 #elif ANDROID
         _httpClient = new HttpClient { BaseAddress = new Uri("http://192.168.50.203:7050") };
+        //_httpClient = new HttpClient { BaseAddress = new Uri("http://1.94.145.54:7050") };
 #else
         _httpClient = new HttpClient { BaseAddress = new Uri("https://localhost:7051") };
 #endif

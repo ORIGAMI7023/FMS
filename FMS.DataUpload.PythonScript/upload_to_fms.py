@@ -7,7 +7,7 @@ url = "http://localhost:7050/api/revenue/import"
 
 # 获取当前脚本所在目录
 base_dir = os.path.dirname(__file__)
-json_path = os.path.join(base_dir, "RevenueRecords_2024.json")
+json_path = os.path.join(base_dir, "RevenueRecords_2025.json")
 
 # 读取 JSON 数据
 with open(json_path, "r", encoding="utf-8") as f:

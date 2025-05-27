@@ -21,7 +21,7 @@
             <Label Text="今日总营收" FontSize="18" />
             <Label Text="{Binding TotalToday, StringFormat='{}{0:C}'}" FontSize="24" FontAttributes="Bold" Margin="0,0,0,3"/>
 
-            <Label Text="本月日均营收" FontSize="18" />
+            <Label Text="本月日均" FontSize="18" />
             <Label Text="{Binding AverageDaily, StringFormat='{}{0:C}'}" FontSize="24" FontAttributes="Bold" Margin="0,0,0,3"/>
 
 
