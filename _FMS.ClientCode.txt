@@ -1,18 +1,24 @@
+### 文件索引
+App.xaml
+App.xaml.cs
+AssemblyInfo.cs
+FMS.Client.csproj
+RelayCommand.cs
+Config\UploadConfig.json
+Models\DailyRevenueUploadRequest.cs
+Models\RevenueItem.cs
+Models\RevenueRecord.cs
+Models\UploadConfig.cs
+Services\ApiService.cs
+ViewModels\RevenueRecord.cs
+ViewModels\UploadViewModel.cs
+Views\DuplicateDoctorHider.cs
+Views\MainWindow.xaml
+Views\UploadPage.xaml
+Views\UploadPage.xaml.cs
 
+### 文件内容
 
-# --- App.xaml ---
-﻿<Application x:Class="FMS.Client.App"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:FMS.Client.Views"
-             StartupUri="Views/UploadPage.xaml">
-    <Application.Resources>
-         
-    </Application.Resources>
-</Application>
-
-
-# --- App.xaml.cs ---
 ﻿using System.Configuration;
 using System.Data;
 using System.Windows;
