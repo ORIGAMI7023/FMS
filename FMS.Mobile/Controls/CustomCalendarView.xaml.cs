@@ -78,13 +78,12 @@ namespace FMS.Mobile.Controls
         private async void OnMonthLabelTapped(object sender, EventArgs e)
         {
             var yearList = new List<string>();
-            int currentYear = DateTime.Now.Year;//获取当前年份
-            for (int y = 2024; y <= currentYear; y++)
+            for (int y = 2024; y <= DateTime.Now.Year; y++)
                 yearList.Add(y.ToString());
 
             string selected = await Shell.Current.DisplayActionSheet("选择年份", "取消", null, yearList.ToArray());
 
-            if (int.TryParse(selected, out int year) && (year != currentYear))//修改年份时，重绘界面
+            if (int.TryParse(selected, out int year) && (year != SelectedDate.Year))//修改年份时，重绘界面
             {
                 _displayMonth = new DateTime(year, _displayMonth.Month, 1);
                 BuildCalendar();
