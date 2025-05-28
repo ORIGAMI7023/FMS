@@ -45,10 +45,12 @@ GET http://localhost:7050/api/revenue/query?
 Accept: application/json
 
 
-### [HttpGet("statistics/monthly/amount")]
-### 按月统计金额（2024年5月）
-GET {{FMS.Server_HostAddress}}/api/revenue/statistics/monthly/amount?year=2024&month=5
+
+### [HttpGet("home/summary/monthly")]
+### 获取 2024 年 5 月的每日金额统计
+GET http://localhost:7050/api/revenue/home/summary/monthly?date=2024-05-01
 Accept: application/json
+
 
 
 ### [HttpGet("statistics/monthly/visitcount")]

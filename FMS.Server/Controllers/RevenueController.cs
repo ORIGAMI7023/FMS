@@ -29,7 +29,7 @@ public class RevenueController : ControllerBase
             return BadRequest(new { message = "上传数据为空" });
 
         foreach (var record in records)
-        {   
+        {
             record.Id = Guid.NewGuid(); // 生成guid主键
             if (string.IsNullOrWhiteSpace(record.Source))
                 record.Source = "Admin";  // 如果Soruce字段为空，默认标注来源为Admin
@@ -93,12 +93,11 @@ public class RevenueController : ControllerBase
     /// 获取指定月份的收入统计摘要信息。
     /// </summary>
     /// <returns>包含 指定月度总营收，指定日期营收，指定月月均收入 </returns>
-    [HttpGet("home/summary")]
+    [HttpGet("home/summary/monthly")]
     public async Task<ActionResult<MonthlySummaryDto>> GetMonthlySummary(DateOnly date)
     {
         var targetMonthStart = new DateOnly(date.Year, date.Month, 1);  // 获取目标月的第一天
-        int daysInMonth = DateTime.DaysInMonth(date.Year, date.Month);  // 获取该月的总天数
-        var targetMonthEnd = targetMonthStart.AddDays(daysInMonth);  // 即下月1号，用于 "<" 判断
+        var targetMonthEnd = targetMonthStart.AddMonths(1);  // 终点为即下月1号，用于 "<" 判断
 
         // 获取本月记录
         var recordsInMonth = await _context.RevenueRecords
@@ -119,25 +118,27 @@ public class RevenueController : ControllerBase
             .Where(r => r.Date == date)
             .Sum(r => AdjustedValue(r));
 
-        int activeDays = recordsInMonth
+        int activeDays = recordsInMonth//当前月有数据的日数
             .Select(r => r.Date)
             .Distinct()
             .Count();
 
+        //日均数据
         decimal averageDaily = activeDays > 0 ? totalMonthly / activeDays : 0;
 
+        //包含当月所有每日数据
+        var dailyMap = recordsInMonth
+            .GroupBy(r => r.Date)
+            .ToDictionary(g => g.Key, g => g.Sum(AdjustedValue));
 
         var result = new MonthlySummaryDto
         {
             TotalMonthly = totalMonthly,
-            TotalToday = totalToday,
-            AverageDaily = Math.Round(averageDaily, 2)
+            AverageDaily = Math.Round(averageDaily, 2),
+            DailyMap = dailyMap
         };
 
         return Ok(result);
     }
-
-
-
 
 }
