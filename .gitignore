@@ -14,7 +14,8 @@ obj/
 Thumbs.db
 
 # SQLite local DB
-*.db
+fms.db-wal
+fms.db-shm
 
 # Logs
 *.log
