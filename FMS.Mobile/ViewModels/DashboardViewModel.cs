@@ -27,6 +27,7 @@ namespace FMS.Mobile.ViewModels
         [ObservableProperty]
         private Dictionary<DateOnly, decimal> dailyMap = new();
 
+        private DateOnly currentMonth;
 
         public DashboardViewModel()
         {
@@ -40,9 +41,29 @@ namespace FMS.Mobile.ViewModels
         /// <param name="value"></param>
         partial void OnSelectedDateChanged(DateTime value)
         {
-            LoadSummaryAsync();
+            if (value.Month != currentMonth.Month || value.Year != currentMonth.Year)//当切换月份时，重新加载月数据
+            {
+                LoadSummaryAsync();
+            }
+            else//未切换月份，从本地缓存中获取数据
+            {
+                ChangeSelectedDate();
+            }
+        }   
+
+        /// <summary>
+        /// 在同一个月内切换日期时调用，从本地缓存中获取数据
+        /// </summary>
+        private void ChangeSelectedDate()
+        {
+            DateOnly date = DateOnly.FromDateTime(SelectedDate);//获取当前选中的日期
+            TotalToday = DailyMap.ContainsKey(date) ? DailyMap[date] : 0;//如果今天有数据则显示，否则为0
         }
 
+        /// <summary>
+        /// 切换月份时调用，重新加载整月数据
+        /// </summary>
+        /// <returns></returns>
         private async Task LoadSummaryAsync()
         {
             DateOnly date = DateOnly.FromDateTime(SelectedDate);//获取当前选中的日期
@@ -59,6 +80,7 @@ namespace FMS.Mobile.ViewModels
                 TotalMonthly = result.TotalMonthly;
                 AverageDaily = result.AverageDaily;
                 DailyMap = result.DailyMap;
+                currentMonth = date;//更新当前月份
 
                 TotalToday = DailyMap.ContainsKey(date) ? DailyMap[date] : 0;//如果今天有数据则显示，否则为0
                 if (TotalToday == 0 && date == DateOnly.FromDateTime(DateTime.Now))
