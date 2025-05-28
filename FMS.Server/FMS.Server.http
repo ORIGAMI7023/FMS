@@ -1,7 +1,7 @@
 @FMS.Server_HostAddress = http://localhost:7050
 
 ### [HttpPost("import")]
-### 用于导入收入数据
+### 用于导入收入数据_________________使用后会在数据库中创建新的收入记录，谨慎使用
 POST {{FMS.Server_HostAddress}}/api/revenue/import
 Content-Type: application/json
 
@@ -10,7 +10,7 @@ Content-Type: application/json
     "owner": "杨承红",
     "itemType": "医保",
     "value": 123.45,
-    "date": "2024-05-01",
+    "date": "2025-06-01",
     "isVisitCount": false,
     "isExcludedFromSummary": false,
     "source": "Admin"
@@ -19,7 +19,7 @@ Content-Type: application/json
     "owner": "零药",
     "itemType": "人次",
     "value": 456.78,
-    "date": "2024-05-02",
+    "date": "2025-06-21",
     "isVisitCount": true,
     "isExcludedFromSummary": false,
     "source": "Admin"
@@ -52,11 +52,11 @@ GET http://localhost:7050/api/revenue/home/summary/monthly?date=2024-05-01
 Accept: application/json
 
 
-###unable
-### [HttpGet("statistics/monthly/visitcount")]
+###以下接口暂未实现?????????????????????????????????????????/
+### [HttpGet("doctors/monthly/visitcount")]
 ### 按月统计人次（2024年5月）
-GET {{FMS.Server_HostAddress}}/api/revenue/statistics/monthly/visitcount?year=2024&month=5
+GET http://localhost:7050/api/revenue/doctors/monthly/visitcount?year=2024&month=5
 Accept: application/json
 
 ###
-GET http://localhost:7050/api/revenue/home/summary?date=2024-02-05
+GET http://localhost:7050/api/revenue/doctors/summary?date=2024-02-05

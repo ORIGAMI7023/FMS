@@ -17,42 +17,74 @@ public class RevenueController : ControllerBase
 
     public RevenueController(AppDbContext context) { _context = context; }
 
-    /// <summary>
-    /// import接口，用于从JSON格式批量导入收入记录数据。
-    /// </summary>
+
     [HttpPost("import")]
     public async Task<IActionResult> ImportFromJson([FromBody] List<RevenueRecord> records)
     {
-        //Console.WriteLine("---- 收到 POST /import 请求，共有记录数：" + records?.Count);
-
         if (records == null || records.Count == 0)
             return BadRequest(new { message = "上传数据为空" });
 
+        // 标准化 Source
         foreach (var record in records)
         {
-            record.Id = Guid.NewGuid(); // 生成guid主键
             if (string.IsNullOrWhiteSpace(record.Source))
-                record.Source = "Admin";  // 如果Soruce字段为空，默认标注来源为Admin
+                record.Source = "Admin";
         }
+
+        // 查找所有与上传数据“字段完全一致”的已有记录
+        var duplicateRecords = new List<RevenueRecord>();
+        foreach (var r in records)
+        {
+            bool exists = await _context.RevenueRecords.AnyAsync(db =>
+                db.Date == r.Date &&
+                db.Value == r.Value &&
+                db.Owner == r.Owner &&
+                db.ItemType == r.ItemType &&
+                db.IsVisitCount == r.IsVisitCount &&
+                db.IsExcludedFromSummary == r.IsExcludedFromSummary &&
+                db.Source == r.Source
+            );
+            if (exists) duplicateRecords.Add(r);
+        }
+        if (duplicateRecords.Count > 0)//若出现重复记录，则返回冲突状态码
+        {
+            return Conflict(new
+            {
+                message = "数据库中已存在重复记录，本次上传的所有数据未导入数据库。",
+                duplicates = duplicateRecords.Select(d => new
+                {
+                    d.Date,
+                    d.Value,
+                    d.Owner,
+                    d.ItemType,
+                    d.IsVisitCount,
+                    d.IsExcludedFromSummary,
+                    d.Source
+                })
+            });
+        }
+
+        // 没有重复项，生成主键并保存
+        foreach (var r in records)
+            r.Id = Guid.NewGuid();
 
         try
         {
             await _context.RevenueRecords.AddRangeAsync(records);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "导入成功", count = records.Count });  // 返回导入成功的记录数
+            return Ok(new { message = "导入成功", count = records.Count });
         }
         catch (DbUpdateException ex)
         {
-            // 数据库更新失败（比如外键、唯一键等问题）
             return StatusCode(500, new { message = "数据库更新失败", error = ex.Message });
         }
         catch (Exception ex)
         {
-            // 其他未处理异常
             return StatusCode(500, new { message = "导入失败", error = ex.Message });
         }
     }
+
 
     /// <summary>
     /// query接口，用于查询收入记录数据。
