@@ -13,8 +13,9 @@ public class ApiService
 #if WINDOWS
         _httpClient = new HttpClient { BaseAddress = new Uri("http://127.0.0.1:7050") };
 #elif ANDROID
-        _httpClient = new HttpClient { BaseAddress = new Uri("http://192.168.50.203:7050") };
-        //_httpClient = new HttpClient { BaseAddress = new Uri("http://1.94.145.54:7050") };
+        //_httpClient = new HttpClient { BaseAddress = new Uri("http://192.168.50.203:7050") };//台式机内网
+        _httpClient = new HttpClient { BaseAddress = new Uri("http://192.168.90.114:7050") };//笔记本内网
+        //_httpClient = new HttpClient { BaseAddress = new Uri("http://1.94.145.54:7050") };//服务器公网
 #else
         _httpClient = new HttpClient { BaseAddress = new Uri("https://localhost:7051") };
 #endif
@@ -25,7 +26,7 @@ public class ApiService
     /// </summary>
     public async Task<MonthlySummary?> GetMonthlySummaryAsync(DateOnly date)
     {
-        var response = await _httpClient.GetAsync($"/api/revenue/home/summary?date={date}");
+        var response = await _httpClient.GetAsync($"/api/revenue/home/summary/monthly?date={date}");
         if (response.IsSuccessStatusCode)
         {
             var json = await response.Content.ReadAsStringAsync();
