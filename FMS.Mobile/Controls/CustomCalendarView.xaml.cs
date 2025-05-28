@@ -21,6 +21,8 @@ namespace FMS.Mobile.Controls
                 new Dictionary<DateOnly, decimal>(),
                 propertyChanged: OnDailyMapChanged);
 
+        private bool _suppressAutoSelect = false;//用于区分当前是否正在切换月份以在BuildCalendar方法中自动选择日期
+
 
         //当前选中的日期
         public DateTime SelectedDate
@@ -163,10 +165,20 @@ namespace FMS.Mobile.Controls
             }
 
             //检查当前显示的月份是否为今天所在的月份，如果是，则将SelectedDate设置为今天，否则设置为当前显示月份的第一天
-            SelectedDate = (DateTime.Today.Month == _displayMonth.Month && DateTime.Today.Year == _displayMonth.Year)
+            //SelectedDate = (DateTime.Today.Month == _displayMonth.Month && DateTime.Today.Year == _displayMonth.Year)
+            //    ? DateTime.Today
+            //    : new DateTime(_displayMonth.Year, _displayMonth.Month, 1);
+
+            if (!_suppressAutoSelect) // 仅当不是用户操作时，自动选中
+            {
+                DateTime newDate = (DateTime.Today.Month == _displayMonth.Month && DateTime.Today.Year == _displayMonth.Year)
                 ? DateTime.Today
                 : new DateTime(_displayMonth.Year, _displayMonth.Month, 1);
 
+                if (SelectedDate != newDate)
+                    SelectedDate = newDate;
+            }
+            _suppressAutoSelect = false; // 重置标志位
             UpdateSelectionVisual();
         }
 
@@ -208,7 +220,9 @@ namespace FMS.Mobile.Controls
         {
             if (sender is Button btn && btn.CommandParameter is DateTime dt)
             {
-                SelectedDate = dt;
+                _suppressAutoSelect = true; // 按下的是日期按钮，禁止自动选择
+                if (SelectedDate != dt)
+                    SelectedDate = dt;
                 UpdateSelectionVisual();
             }
         }
