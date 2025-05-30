@@ -3,16 +3,46 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodels="clr-namespace:FMS.Mobile.ViewModels"
              x:Class="FMS.Mobile.Views.DoctorPage">
-    
-    
+
     <ContentPage.BindingContext>
         <viewmodels:DoctorViewModel />
     </ContentPage.BindingContext>
 
-
     <ScrollView>
-        <VerticalStackLayout Padding="20" Spacing="10">
-            <Label Text="医生营收页面（待开发）" FontSize="24" HorizontalOptions="Center" VerticalOptions="CenterAndExpand" />
+        <VerticalStackLayout Padding="18" Spacing="12">
+
+            <!-- 本月营业天数 -->
+            <Label Text="{Binding BusinessDays, StringFormat='本月营业天数：{0} 天'}"
+                   FontSize="18"
+                   FontAttributes="Bold" />
+
+            <!-- 医生汇总列表 -->
+            <CollectionView ItemsSource="{Binding Doctors}">
+                <CollectionView.HeaderTemplate>
+                    <DataTemplate>
+                        <Grid ColumnDefinitions="*,Auto,Auto" Padding="0,4">
+                            <Label Text="医生" FontAttributes="Bold" />
+                            <Label Text="总营收" FontAttributes="Bold" Grid.Column="1" HorizontalOptions="End" />
+                            <Label Text="总人次" FontAttributes="Bold" Grid.Column="2" HorizontalOptions="End" />
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.HeaderTemplate>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid ColumnDefinitions="*,Auto,Auto" Padding="0,4">
+                            <Label Text="{Binding Owner}" />
+                            <Label Text="{Binding TotalRevenue, StringFormat='￥{0:F2}'}"
+                                   Grid.Column="1"
+                                   HorizontalOptions="End" />
+                            <Label Text="{Binding TotalVisits}"
+                                   Grid.Column="2"
+                                   HorizontalOptions="End" />
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

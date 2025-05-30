@@ -26,7 +26,6 @@ Content-Type: application/json
   }
 ]
 
-
 ### [HttpGet("query")]
 ### 查询：2024年1月1日 ~ 1月31日
 GET http://localhost:7050/api/revenue/query?start=2024-01-01&end=2024-01-31
@@ -45,12 +44,17 @@ GET http://localhost:7050/api/revenue/query?
 Accept: application/json
 
 
-
+### Page Home
 ### [HttpGet("home/summary/monthly")]
 ### 获取 2024 年 5 月的每日金额统计
 GET http://localhost:7050/api/revenue/home/summary/monthly?date=2024-05-01
 Accept: application/json
 
+
+### Page Doctors
+### 获取当前月份医生营收汇总
+GET http://localhost:7050/api/revenue/doctors/summary/currentMonth
+Accept: application/json
 
 ###以下接口暂未实现?????????????????????????????????????????/
 ### [HttpGet("doctors/monthly/visitcount")]
