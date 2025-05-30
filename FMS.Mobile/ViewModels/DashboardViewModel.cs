@@ -15,22 +15,20 @@ namespace FMS.Mobile.ViewModels
     {
         private readonly ApiService _apiService;//接口服务实例
 
-        [ObservableProperty]
-        private decimal totalMonthly;
+        [ObservableProperty] private decimal totalMonthly;
 
-        [ObservableProperty]
-        private decimal totalToday;
+        [ObservableProperty] private DateTime displayMonth; 
 
-        [ObservableProperty]
-        private decimal averageDaily;
+        [ObservableProperty] private decimal totalToday;
 
-        [ObservableProperty]
-        private DateTime selectedDate = DateTime.Today;//初始化时，默认选中今天
+        [ObservableProperty] private decimal averageDaily;
 
-        [ObservableProperty]
-        private Dictionary<DateOnly, decimal> dailyMap = new();
+        [ObservableProperty] private DateTime selectedDate = DateTime.Today;//初始化时，默认选中今天
+
+        [ObservableProperty] private Dictionary<DateOnly, decimal> dailyMap = new();
 
         private DateOnly currentMonth;
+        private DateTime _loadingMonth = DateTime.MinValue;
 
         public DashboardViewModel()
         {
@@ -44,15 +42,18 @@ namespace FMS.Mobile.ViewModels
         /// <param name="value"></param>
         partial void OnSelectedDateChanged(DateTime value)
         {
-            if (value.Month != currentMonth.Month || value.Year != currentMonth.Year)//当切换月份时，重新加载月数据
+            DisplayMonth = new DateTime(value.Year, value.Month, 1);  // ✅ 同步控件月份显示
+
+            if (value.Month != currentMonth.Month || value.Year != currentMonth.Year)
             {
-                LoadSummaryAsync();
+                LoadSummaryAsync(); 
             }
-            else//未切换月份，从本地缓存中获取数据
+            else
             {
                 ChangeSelectedDate();
             }
         }
+
 
         /// <summary>
         /// 在同一个月内切换日期时调用，从本地缓存中获取数据
@@ -69,11 +70,14 @@ namespace FMS.Mobile.ViewModels
         /// <returns></returns>
         private async Task LoadSummaryAsync()
         {
-            DateOnly date = DateOnly.FromDateTime(SelectedDate);//获取当前选中的日期
+            DateOnly date = DateOnly.FromDateTime(SelectedDate);
+            DateTime thisMonth = new(date.Year, date.Month, 1);
+            if (_loadingMonth == thisMonth) return;
+            _loadingMonth = thisMonth;
 
             try
             {
-                MonthlySummary? result = await _apiService.GetMonthlySummaryAsync(date);//调用接口获取指定日期的月度收入摘要
+                MonthlySummary? result = await _apiService.GetMonthlySummaryAsync(date);
                 if (result == null)
                 {
                     await Shell.Current.DisplayAlert("提示", "未找到本月数据。", "确定");
@@ -83,13 +87,13 @@ namespace FMS.Mobile.ViewModels
                 TotalMonthly = result.TotalMonthly;
                 AverageDaily = result.AverageDaily;
                 DailyMap = result.DailyMap;
-                currentMonth = date;//更新当前月份
+                currentMonth = date;
 
-                // 广播月份，提示doctor页面更改选中的月份（取当月 1 号）
-                DateTime monthFirstDay = new DateTime(date.Year, date.Month, 1);
-                WeakReferenceMessenger.Default.Send(new MonthChangedMessage(monthFirstDay));
+                DisplayMonth = thisMonth;
 
-                TotalToday = DailyMap.ContainsKey(date) ? DailyMap[date] : 0;//如果今天有数据则显示，否则为0
+                WeakReferenceMessenger.Default.Send(new MonthChangedMessage(thisMonth));
+
+                TotalToday = DailyMap.ContainsKey(date) ? DailyMap[date] : 0;
                 if (TotalToday == 0 && date == DateOnly.FromDateTime(DateTime.Now))
                     await Shell.Current.DisplayAlert("提示", "今天还没有收入记录，请稍后查看。", "确定");
             }
@@ -97,9 +101,6 @@ namespace FMS.Mobile.ViewModels
             {
                 Console.WriteLine($"[网络错误] {ex.Message}");
                 await Shell.Current.DisplayAlert("错误", $"无法连接到服务器。{ex.Message}", "确定");
-                TotalMonthly = 0;
-                TotalToday = 0;
-                AverageDaily = 0;
             }
             catch (Exception ex)
             {
@@ -107,10 +108,5 @@ namespace FMS.Mobile.ViewModels
                 await Shell.Current.DisplayAlert("错误", "加载数据时出现异常。", "确定");
             }
         }
-
-
-
-       
-
     }
 }

@@ -25,7 +25,8 @@ namespace FMS.Mobile.ViewModels
         {
             // 构造时异步加载（不 await，避免阻塞 UI）
             _ = LoadSummaryAsync();   // 默认当月
-
+            RecordMonth();
+                
             WeakReferenceMessenger.Default.Register<MonthChangedMessage>(this, (r, m) =>
             {
                 DateTime monthFirst = m.Value;
@@ -42,6 +43,7 @@ namespace FMS.Mobile.ViewModels
         {
             SelectedMonth = SelectedMonth.AddMonths(-1);
             _ = LoadSummaryAsync();
+            RecordMonth();
         }
 
         [RelayCommand]
@@ -49,6 +51,7 @@ namespace FMS.Mobile.ViewModels
         {
             SelectedMonth = SelectedMonth.AddMonths(1);
             _ = LoadSummaryAsync();
+            RecordMonth();
         }
 
         [ObservableProperty]
@@ -59,7 +62,10 @@ namespace FMS.Mobile.ViewModels
         [ObservableProperty] private decimal totalMonthlyRevenue;
         [ObservableProperty] private int totalMonthlyVisits;
 
-
+        private void RecordMonth()
+        {
+            AppState.LastDoctorMonth = new DateTime(SelectedMonth.Year, SelectedMonth.Month, 1);
+        }
         /// <summary>
         /// 调接口并填充属性
         /// </summary>

@@ -21,8 +21,31 @@ namespace FMS.Mobile.Controls
                 new Dictionary<DateOnly, decimal>(),
                 propertyChanged: OnDailyMapChanged);
 
+        public static readonly BindableProperty DisplayMonthProperty =
+        BindableProperty.Create(
+            nameof(DisplayMonth),
+            typeof(DateTime),
+            typeof(CustomCalendarView),
+            DateTime.Today,
+            propertyChanged: OnDisplayMonthChanged);
+
         private bool _autoSelect;//用于区分当前是否正在切换月份以在BuildCalendar方法中自动选择日期
 
+        public DateTime DisplayMonth
+        {
+            get => (DateTime)GetValue(DisplayMonthProperty);
+            set => SetValue(DisplayMonthProperty, value);
+        }
+        private static void OnDisplayMonthChanged(BindableObject bindable, object oldValue, object newValue)
+        {
+            if (bindable is CustomCalendarView view && newValue is DateTime newMonth)
+            {
+                view._displayMonth = new DateTime(newMonth.Year, newMonth.Month, 1); // ✅ 赋值核心变量
+                view.MonthLabel.Text = newMonth.ToString("yyyy年M月");                // ✅ 更新标题
+                view._autoSelect = true;                                             // ✅ 自动选中第一天
+                view.BuildCalendar();                                                // ✅ 重建日历网格
+            }
+        }
 
         //当前选中的日期
         public DateTime SelectedDate
