@@ -11,37 +11,57 @@
     <ScrollView>
         <VerticalStackLayout Padding="18" Spacing="12">
 
+            <!-- 顶部月份选择条 -->
+            <Grid ColumnDefinitions="Auto,*,Auto" Padding="0,8">
+                <Button Text="＜" Command="{Binding PrevMonthCommand}" />
+                <Label Text="{Binding SelectedMonth, StringFormat='{}{0:yyyy年M月}'}"
+                    HorizontalOptions="Center" FontSize="18" Grid.Column="1"/>
+                <Button Text="＞" Command="{Binding NextMonthCommand}" Grid.Column="2" />
+            </Grid>
+
+
             <!-- 本月营业天数 -->
             <Label Text="{Binding BusinessDays, StringFormat='本月营业天数：{0} 天'}"
                    FontSize="18"
                    FontAttributes="Bold" />
 
             <!-- 医生汇总列表 -->
-            <CollectionView ItemsSource="{Binding Doctors}">
+            <CollectionView ItemsSource="{Binding Doctors}" Margin="0,4,0,0">
+                <!-- 表头 -->
                 <CollectionView.HeaderTemplate>
                     <DataTemplate>
-                        <Grid ColumnDefinitions="*,Auto,Auto" Padding="0,4">
-                            <Label Text="医生" FontAttributes="Bold" />
-                            <Label Text="总营收" FontAttributes="Bold" Grid.Column="1" HorizontalOptions="End" />
-                            <Label Text="总人次" FontAttributes="Bold" Grid.Column="2" HorizontalOptions="End" />
+                        <Grid ColumnDefinitions="*,110,70" Padding="0,4" ColumnSpacing="8">
+                            <Label Text="医生"            FontAttributes="Bold"/>
+                            <Label Text="总营收" Grid.Column="1" FontAttributes="Bold" HorizontalOptions="End"/>
+                            <Label Text="总人次" Grid.Column="2" FontAttributes="Bold" HorizontalOptions="End"/>
                         </Grid>
                     </DataTemplate>
                 </CollectionView.HeaderTemplate>
 
+                <!-- 行模板 -->
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Grid ColumnDefinitions="*,Auto,Auto" Padding="0,4">
-                            <Label Text="{Binding Owner}" />
-                            <Label Text="{Binding TotalRevenue, StringFormat='￥{0:F2}'}"
+                        <Grid ColumnDefinitions="*,110,70" Padding="0,4" ColumnSpacing="8">
+                            <!-- 医生 -->
+                            <Label Text="{Binding Owner}"                    />
+
+                            <!-- 金额 -->
+                            <Label x:Name="RevenueLabel"
+                                   Text="{Binding TotalRevenue, StringFormat='￥{0:N2}'}"
                                    Grid.Column="1"
-                                   HorizontalOptions="End" />
-                            <Label Text="{Binding TotalVisits}"
+                                   HorizontalOptions="End"/>
+
+                            <!-- 人次（整数）-->
+                            <Label Text="{Binding TotalVisits, StringFormat='{0:N0}'}"
                                    Grid.Column="2"
-                                   HorizontalOptions="End" />
+                                   HorizontalOptions="End"/>
                         </Grid>
+
+                       
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>
+
 
         </VerticalStackLayout>
     </ScrollView>

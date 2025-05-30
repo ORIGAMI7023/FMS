@@ -231,5 +231,53 @@ public class RevenueController : ControllerBase
     }
 
 
+    /// <summary>
+    /// 获取指定月份医生营收汇总。
+    /// year / month 必填（1-12）。其它逻辑同 currentMonth。
+    /// </summary>
+    [HttpGet("doctors/summary")]
+    public async Task<ActionResult<DoctorMonthlySummaryDto>> GetDoctorsSummaryByMonth(
+        [FromQuery] int year,
+        [FromQuery] int month)
+    {
+        if (month < 1 || month > 12) return BadRequest("month 必须为 1-12");
+
+        DateOnly monthStart = new DateOnly(year, month-1, 1);
+        DateOnly monthEnd = monthStart.AddMonths(1);
+
+        IQueryable<RevenueRecord> baseQuery = _context.RevenueRecords
+            .Where(r => r.Date >= monthStart && r.Date < monthEnd)
+            .Where(r => !r.IsExcludedFromSummary);
+
+        int businessDays = await baseQuery
+            .Where(r => !r.IsVisitCount)
+            .Select(r => r.Date)
+            .Distinct()
+            .CountAsync();
+
+        List<DoctorMonthlySummaryDto.DoctorRow> rows = await baseQuery
+            .GroupBy(r => r.Owner)
+            .Select(g => new DoctorMonthlySummaryDto.DoctorRow
+            {
+                Owner = g.Key,
+                TotalRevenue = g.Where(r => !r.IsVisitCount)
+                                .Sum(r => r.ItemType == "退费" ? -r.Value : r.Value),
+                TotalVisits = (int)g.Where(r => r.IsVisitCount)
+                                    .Sum(r => r.Value)
+            })
+            .ToListAsync();
+
+        rows = rows.OrderByDescending(r => r.TotalRevenue).ToList();
+
+        DoctorMonthlySummaryDto dto = new DoctorMonthlySummaryDto
+        {
+            BusinessDays = businessDays,
+            TotalMonthlyRevenue = rows.Sum(r => r.TotalRevenue),
+            TotalMonthlyVisits = rows.Sum(r => r.TotalVisits),
+            Doctors = rows
+        };
+
+        return Ok(dto);
+    }
 
 }
