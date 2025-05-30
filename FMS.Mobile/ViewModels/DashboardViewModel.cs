@@ -1,10 +1,13 @@
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using FMS.Mobile.Models;
 using FMS.Mobile.Services;
 using System;
 using System.Threading.Tasks;
+using FMS.Mobile.Messages;
+
 
 namespace FMS.Mobile.ViewModels
 {
@@ -49,7 +52,7 @@ namespace FMS.Mobile.ViewModels
             {
                 ChangeSelectedDate();
             }
-        }   
+        }
 
         /// <summary>
         /// 在同一个月内切换日期时调用，从本地缓存中获取数据
@@ -82,6 +85,10 @@ namespace FMS.Mobile.ViewModels
                 DailyMap = result.DailyMap;
                 currentMonth = date;//更新当前月份
 
+                // 广播月份，提示doctor页面更改选中的月份（取当月 1 号）
+                DateTime monthFirstDay = new DateTime(date.Year, date.Month, 1);
+                WeakReferenceMessenger.Default.Send(new MonthChangedMessage(monthFirstDay));
+
                 TotalToday = DailyMap.ContainsKey(date) ? DailyMap[date] : 0;//如果今天有数据则显示，否则为0
                 if (TotalToday == 0 && date == DateOnly.FromDateTime(DateTime.Now))
                     await Shell.Current.DisplayAlert("提示", "今天还没有收入记录，请稍后查看。", "确定");
@@ -100,8 +107,10 @@ namespace FMS.Mobile.ViewModels
                 await Shell.Current.DisplayAlert("错误", "加载数据时出现异常。", "确定");
             }
         }
+
+
+
+       
+
     }
-
-
-
 }

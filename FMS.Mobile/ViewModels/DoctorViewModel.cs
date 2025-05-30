@@ -1,5 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using FMS.Mobile.Messages;
 using FMS.Mobile.Models;
 using FMS.Mobile.Services;
 using System;
@@ -23,6 +25,16 @@ namespace FMS.Mobile.ViewModels
         {
             // 构造时异步加载（不 await，避免阻塞 UI）
             _ = LoadSummaryAsync();   // 默认当月
+
+            WeakReferenceMessenger.Default.Register<MonthChangedMessage>(this, (r, m) =>
+            {
+                DateTime monthFirst = m.Value;
+                if (SelectedMonth.Year != monthFirst.Year || SelectedMonth.Month != monthFirst.Month)
+                {
+                    SelectedMonth = monthFirst;
+                    _ = LoadSummaryAsync();
+                }
+            });
         }
 
         [RelayCommand]
