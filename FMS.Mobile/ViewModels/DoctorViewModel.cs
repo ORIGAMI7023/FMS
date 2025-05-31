@@ -23,10 +23,13 @@ namespace FMS.Mobile.ViewModels
 
         public DoctorViewModel()
         {
+
             // 构造时异步加载（不 await，避免阻塞 UI）
             _ = LoadSummaryAsync();   // 默认当月
             RecordMonth();
-                
+            if (AppState.LastHomeMonth is DateTime m)
+                SelectedMonth = m;
+
             WeakReferenceMessenger.Default.Register<MonthChangedMessage>(this, (r, m) =>
             {
                 DateTime monthFirst = m.Value;
@@ -58,9 +61,6 @@ namespace FMS.Mobile.ViewModels
         private ObservableCollection<DoctorMonthlySummary.DoctorRow> doctors
             = new ObservableCollection<DoctorMonthlySummary.DoctorRow>();
 
-        // 调试用：总营收与总人次（界面暂不展示）
-        [ObservableProperty] private decimal totalMonthlyRevenue;
-        [ObservableProperty] private int totalMonthlyVisits;
 
         private void RecordMonth()
         {
@@ -80,8 +80,6 @@ namespace FMS.Mobile.ViewModels
                 if (dto == null) return;
 
                 BusinessDays = dto.BusinessDays;
-                TotalMonthlyRevenue = dto.TotalMonthlyRevenue;
-                TotalMonthlyVisits = dto.TotalMonthlyVisits;
 
                 Doctors.Clear();
                 foreach (DoctorMonthlySummary.DoctorRow row in dto.Doctors)

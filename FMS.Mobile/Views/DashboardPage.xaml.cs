@@ -13,15 +13,14 @@ public partial class DashboardPage : ContentPage
     {
         base.OnAppearing();
 
-        if (BindingContext is DashboardViewModel vm &&
-            AppState.LastDoctorMonth is DateTime doctorMonth)
+        if (BindingContext is DashboardViewModel vm && AppState.LastDoctorMonth is DateTime doctorMonth)
         {
-            // 如果 Home 当前月份与医生页不同，则切换并重新加载
             if (vm.SelectedDate.Year != doctorMonth.Year ||
                 vm.SelectedDate.Month != doctorMonth.Month)
             {
-                vm.SelectedDate = doctorMonth;   // 将触发 OnSelectedDateChanged → 自动 LoadSummaryAsync
+                vm.SelectedDate = doctorMonth;
             }
         }
+
     }
 }

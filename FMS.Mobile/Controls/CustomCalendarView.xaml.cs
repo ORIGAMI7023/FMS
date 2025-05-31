@@ -11,23 +11,23 @@ namespace FMS.Mobile.Controls
             BindableProperty.Create(nameof(SelectedDate),
                                     typeof(DateTime),
                                     typeof(CustomCalendarView),
-                                    DateTime.Today, BindingMode.TwoWay);
+                                    DateTime.Today, BindingMode.TwoWay,
+                                    propertyChanged: OnSelectedDateChanged
+);
 
         public static readonly BindableProperty DailyMapProperty =
-            BindableProperty.Create(
-                nameof(DailyMap),
-                typeof(Dictionary<DateOnly, decimal>),
-                typeof(CustomCalendarView),
-                new Dictionary<DateOnly, decimal>(),
-                propertyChanged: OnDailyMapChanged);
+            BindableProperty.Create(nameof(DailyMap),
+                                    typeof(Dictionary<DateOnly, decimal>),
+                                    typeof(CustomCalendarView),
+                                    new Dictionary<DateOnly, decimal>(),
+                                    propertyChanged: OnDailyMapChanged);
 
         public static readonly BindableProperty DisplayMonthProperty =
-        BindableProperty.Create(
-            nameof(DisplayMonth),
-            typeof(DateTime),
-            typeof(CustomCalendarView),
-            DateTime.Today,
-            propertyChanged: OnDisplayMonthChanged);
+        BindableProperty.Create(nameof(DisplayMonth),
+                                typeof(DateTime),
+                                typeof(CustomCalendarView),
+                                DateTime.Today,
+                                propertyChanged: OnDisplayMonthChanged);
 
         private bool _autoSelect;//用于区分当前是否正在切换月份以在BuildCalendar方法中自动选择日期
 
@@ -52,6 +52,23 @@ namespace FMS.Mobile.Controls
         {
             get => (DateTime)GetValue(SelectedDateProperty);
             set => SetValue(SelectedDateProperty, value);
+        }
+
+        private static void OnSelectedDateChanged(BindableObject bindable, object oldV, object newV)
+        {
+            if (bindable is CustomCalendarView view && newV is DateTime dt)
+            {
+                if (view._displayMonth.Year != dt.Year || view._displayMonth.Month != dt.Month)
+                {
+                    view._displayMonth = new DateTime(dt.Year, dt.Month, 1);
+                    view.BuildCalendar();
+                }
+                else
+                {
+                    view.SelectedDate = dt;
+                    view.UpdateSelectionVisual();
+                }
+            }
         }
 
         public Dictionary<DateOnly, decimal> DailyMap

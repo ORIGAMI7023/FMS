@@ -17,8 +17,6 @@ namespace FMS.Mobile.ViewModels
 
         [ObservableProperty] private decimal totalMonthly;
 
-        [ObservableProperty] private DateTime displayMonth; 
-
         [ObservableProperty] private decimal totalToday;
 
         [ObservableProperty] private decimal averageDaily;
@@ -42,8 +40,6 @@ namespace FMS.Mobile.ViewModels
         /// <param name="value"></param>
         partial void OnSelectedDateChanged(DateTime value)
         {
-            DisplayMonth = new DateTime(value.Year, value.Month, 1);  // ✅ 同步控件月份显示
-
             if (value.Month != currentMonth.Month || value.Year != currentMonth.Year)
             {
                 LoadSummaryAsync(); 
@@ -88,8 +84,7 @@ namespace FMS.Mobile.ViewModels
                 AverageDaily = result.AverageDaily;
                 DailyMap = result.DailyMap;
                 currentMonth = date;
-
-                DisplayMonth = thisMonth;
+                AppState.LastHomeMonth = new DateTime(date.Year, date.Month, 1);
 
                 WeakReferenceMessenger.Default.Send(new MonthChangedMessage(thisMonth));
 
