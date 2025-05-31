@@ -52,15 +52,6 @@ Accept: application/json
 
 
 ### Page Doctors
-### 获取当前月份医生营收汇总
-GET http://localhost:7050/api/revenue/doctors/summary/currentMonth
-Accept: application/json
-
-###以下接口暂未实现?????????????????????????????????????????/
-### [HttpGet("doctors/monthly/visitcount")]
-### 按月统计人次（2024年5月）
-GET http://localhost:7050/api/revenue/doctors/monthly/visitcount?year=2024&month=5
-Accept: application/json
-
-###
+### [HttpGet("doctors/summary")]
+### 按天指定月份医生收入和人次信息（2024年2月5日）
 GET http://localhost:7050/api/revenue/doctors/summary?date=2024-02-05

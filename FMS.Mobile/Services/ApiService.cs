@@ -39,23 +39,7 @@ public class ApiService
     }
 
     /// <summary>
-    /// 获取当前月份医生营收汇总。
-    /// </summary>
-    public async Task<DoctorMonthlySummary?> GetDoctorSummaryCurrentMonthAsync()
-    {
-        HttpResponseMessage response = await _httpClient.GetAsync("/api/revenue/doctors/summary/currentMonth");
-        if (response.IsSuccessStatusCode)
-        {
-            string json = await response.Content.ReadAsStringAsync();
-            DoctorMonthlySummary? dto = JsonConvert.DeserializeObject<DoctorMonthlySummary>(json);
-            return dto;
-        }
-
-        throw new HttpRequestException($"获取医生汇总失败: {response.StatusCode} - {response.ReasonPhrase}");
-    }
-
-    /// <summary>
-    /// 
+    /// 获取指定月份医生营收汇总。
     /// </summary>
     public async Task<DoctorMonthlySummary?> GetDoctorSummaryAsync(int year, int month)
     {

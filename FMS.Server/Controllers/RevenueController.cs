@@ -174,66 +174,9 @@ public class RevenueController : ControllerBase
         return Ok(result);
     }
 
-
     /// <summary>
     /// 获取“当前月份”各医生营收汇总 + 本月营业天数。
     /// 退费按负值扣减；TotalVisits 为 IsVisitCount == true 的 Value 累加。
-    /// </summary>
-    [HttpGet("doctors/summary/currentMonth")]
-    public async Task<ActionResult<DoctorMonthlySummaryDto>> GetDoctorsSummaryCurrentMonth()
-    {
-        // 计算本月起止
-        DateTime today = DateTime.Today;
-        DateOnly monthStart = new DateOnly(today.Year, today.Month, 1);
-        DateOnly monthEnd = monthStart.AddMonths(1);
-
-        // 基础过滤（排除 IsExcludedFromSummary）
-        IQueryable<RevenueRecord> baseQuery = _context.RevenueRecords
-            .Where(r => r.Date >= monthStart && r.Date < monthEnd)
-            .Where(r => !r.IsExcludedFromSummary);
-
-        // 计算营业天数（只看非 VisitCount 记录）
-        int businessDays = await baseQuery
-            .Where(r => !r.IsVisitCount)
-            .Select(r => r.Date)
-            .Distinct()
-            .CountAsync();
-
-        // 先获取列表，不在数据库层排序
-        List<DoctorMonthlySummaryDto.DoctorRow> rows = await baseQuery
-            .GroupBy(r => r.Owner)
-            .Select(g => new DoctorMonthlySummaryDto.DoctorRow
-            {
-                Owner = g.Key,
-                TotalRevenue = g.Where(r => !r.IsVisitCount)
-                                .Sum(r => r.ItemType == "退费" ? -r.Value : r.Value),
-                TotalVisits = (int)g.Where(r => r.IsVisitCount)
-                                    .Sum(r => r.Value)
-            })
-            .ToListAsync();
-
-        // 在内存中按收入降序排序
-        rows = rows.OrderByDescending(r => r.TotalRevenue).ToList();
-
-        // 汇总（调试用）
-        decimal totalRevenue = rows.Sum(r => r.TotalRevenue);
-        int totalVisits = rows.Sum(r => r.TotalVisits);
-
-        DoctorMonthlySummaryDto dto = new DoctorMonthlySummaryDto
-        {
-            BusinessDays = businessDays,
-            TotalMonthlyRevenue = totalRevenue,
-            TotalMonthlyVisits = totalVisits,
-            Doctors = rows
-        };
-
-        return Ok(dto);
-    }
-
-
-    /// <summary>
-    /// 获取指定月份医生营收汇总。
-    /// year / month 必填（1-12）。其它逻辑同 currentMonth。
     /// </summary>
     [HttpGet("doctors/summary")]
     public async Task<ActionResult<DoctorMonthlySummaryDto>> GetDoctorsSummaryByMonth(
