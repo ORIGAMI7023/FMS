@@ -242,7 +242,7 @@ public class RevenueController : ControllerBase
     {
         if (month < 1 || month > 12) return BadRequest("month 必须为 1-12");
 
-        DateOnly monthStart = new DateOnly(year, month-1, 1);
+        DateOnly monthStart = new DateOnly(year, month, 1);
         DateOnly monthEnd = monthStart.AddMonths(1);
 
         IQueryable<RevenueRecord> baseQuery = _context.RevenueRecords

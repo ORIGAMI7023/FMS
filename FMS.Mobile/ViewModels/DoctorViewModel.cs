@@ -23,12 +23,10 @@ namespace FMS.Mobile.ViewModels
 
         public DoctorViewModel()
         {
+            SelectedMonth = AppState.LastHomeMonth ?? DateTime.Today;
 
-            // 构造时异步加载（不 await，避免阻塞 UI）
-            _ = LoadSummaryAsync();   // 默认当月
-            RecordMonth();
-            if (AppState.LastHomeMonth is DateTime m)
-                SelectedMonth = m;
+            RecordMonth();          // ✅ 放在真正的 SelectedMonth 设置之后
+            _ = LoadSummaryAsync(); // ✅ 然后加载数据
 
             WeakReferenceMessenger.Default.Register<MonthChangedMessage>(this, (r, m) =>
             {
@@ -36,10 +34,12 @@ namespace FMS.Mobile.ViewModels
                 if (SelectedMonth.Year != monthFirst.Year || SelectedMonth.Month != monthFirst.Month)
                 {
                     SelectedMonth = monthFirst;
+                    RecordMonth();              // ✅ 广播响应中也记得刷新
                     _ = LoadSummaryAsync();
                 }
             });
         }
+
 
         [RelayCommand]
         private void PrevMonth()
@@ -73,10 +73,7 @@ namespace FMS.Mobile.ViewModels
         {
             try
             {
-                int y = SelectedMonth.Year;
-                int m = SelectedMonth.Month;
-
-                DoctorMonthlySummary? dto = await _api.GetDoctorSummaryAsync(y, m);
+                DoctorMonthlySummary? dto = await _api.GetDoctorSummaryAsync(SelectedMonth.Year, SelectedMonth.Month);
                 if (dto == null) return;
 
                 BusinessDays = dto.BusinessDays;

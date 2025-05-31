@@ -86,6 +86,7 @@ namespace FMS.Mobile
         /// 医生页最后一次选中的月份（1 号日期）；null 表示未设置
         /// </summary>
         public static DateTime? LastDoctorMonth { get; set; }
+        public static DateTime? LastHomeMonth { get; set; }
     }
 }
 
@@ -245,7 +246,9 @@ namespace FMS.Mobile.Controls
             BindableProperty.Create(nameof(SelectedDate),
                                     typeof(DateTime),
                                     typeof(CustomCalendarView),
-                                    DateTime.Today, BindingMode.TwoWay);
+                                    DateTime.Today, BindingMode.TwoWay,
+                                    propertyChanged: OnSelectedDateChanged
+);
 
         public static readonly BindableProperty DailyMapProperty =
             BindableProperty.Create(nameof(DailyMap),
@@ -284,6 +287,23 @@ namespace FMS.Mobile.Controls
         {
             get => (DateTime)GetValue(SelectedDateProperty);
             set => SetValue(SelectedDateProperty, value);
+        }
+
+        private static void OnSelectedDateChanged(BindableObject bindable, object oldV, object newV)
+        {
+            if (bindable is CustomCalendarView view && newV is DateTime dt)
+            {
+                if (view._displayMonth.Year != dt.Year || view._displayMonth.Month != dt.Month)
+                {
+                    view._displayMonth = new DateTime(dt.Year, dt.Month, 1);
+                    view.BuildCalendar();
+                }
+                else
+                {
+                    view.SelectedDate = dt;
+                    view.UpdateSelectionVisual();
+                }
+            }
         }
 
         public Dictionary<DateOnly, decimal> DailyMap
@@ -1258,8 +1278,6 @@ namespace FMS.Mobile.ViewModels
 
         [ObservableProperty] private decimal totalMonthly;
 
-        [ObservableProperty] private DateTime displayMonth; 
-
         [ObservableProperty] private decimal totalToday;
 
         [ObservableProperty] private decimal averageDaily;
@@ -1283,8 +1301,6 @@ namespace FMS.Mobile.ViewModels
         /// <param name="value"></param>
         partial void OnSelectedDateChanged(DateTime value)
         {
-            DisplayMonth = new DateTime(value.Year, value.Month, 1);  // ✅ 同步控件月份显示
-
             if (value.Month != currentMonth.Month || value.Year != currentMonth.Year)
             {
                 LoadSummaryAsync(); 
@@ -1329,8 +1345,7 @@ namespace FMS.Mobile.ViewModels
                 AverageDaily = result.AverageDaily;
                 DailyMap = result.DailyMap;
                 currentMonth = date;
-
-                DisplayMonth = thisMonth;
+                AppState.LastHomeMonth = new DateTime(date.Year, date.Month, 1);
 
                 WeakReferenceMessenger.Default.Send(new MonthChangedMessage(thisMonth));
 
@@ -1379,10 +1394,13 @@ namespace FMS.Mobile.ViewModels
 
         public DoctorViewModel()
         {
+
             // 构造时异步加载（不 await，避免阻塞 UI）
             _ = LoadSummaryAsync();   // 默认当月
             RecordMonth();
-                
+            if (AppState.LastHomeMonth is DateTime m)
+                SelectedMonth = m;
+
             WeakReferenceMessenger.Default.Register<MonthChangedMessage>(this, (r, m) =>
             {
                 DateTime monthFirst = m.Value;
@@ -1414,9 +1432,6 @@ namespace FMS.Mobile.ViewModels
         private ObservableCollection<DoctorMonthlySummary.DoctorRow> doctors
             = new ObservableCollection<DoctorMonthlySummary.DoctorRow>();
 
-        // 调试用：总营收与总人次（界面暂不展示）
-        [ObservableProperty] private decimal totalMonthlyRevenue;
-        [ObservableProperty] private int totalMonthlyVisits;
 
         private void RecordMonth()
         {
@@ -1436,8 +1451,6 @@ namespace FMS.Mobile.ViewModels
                 if (dto == null) return;
 
                 BusinessDays = dto.BusinessDays;
-                TotalMonthlyRevenue = dto.TotalMonthlyRevenue;
-                TotalMonthlyVisits = dto.TotalMonthlyVisits;
 
                 Doctors.Clear();
                 foreach (DoctorMonthlySummary.DoctorRow row in dto.Doctors)
@@ -1504,16 +1517,15 @@ public partial class DashboardPage : ContentPage
     {
         base.OnAppearing();
 
-        if (BindingContext is DashboardViewModel vm &&
-            AppState.LastDoctorMonth is DateTime doctorMonth)
+        if (BindingContext is DashboardViewModel vm && AppState.LastDoctorMonth is DateTime doctorMonth)
         {
-            //  Home ǰ·ҽҳͬл¼
             if (vm.SelectedDate.Year != doctorMonth.Year ||
                 vm.SelectedDate.Month != doctorMonth.Month)
             {
-                vm.SelectedDate = doctorMonth;   //  OnSelectedDateChanged  Զ LoadSummaryAsync
+                vm.SelectedDate = doctorMonth;
             }
         }
+
     }
 }
 
