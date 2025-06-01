@@ -65,5 +65,11 @@
 
 	</ItemGroup>
 
+	<ItemGroup>
+	  <MauiXaml Update="Views\DoctorDetailPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	</ItemGroup>
+
 </Project>
 	

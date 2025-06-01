@@ -19,7 +19,6 @@
                 <Button Text="＞" Command="{Binding NextMonthCommand}" Grid.Column="2" />
             </Grid>
 
-
             <!-- 本月营业天数 -->
             <Label Text="{Binding BusinessDays, StringFormat='本月营业天数：{0} 天'}"
                    FontSize="18"
@@ -31,9 +30,9 @@
                 <CollectionView.HeaderTemplate>
                     <DataTemplate>
                         <Grid ColumnDefinitions="*,110,70" Padding="0,4" ColumnSpacing="8">
-                            <Label Text="医生"            FontAttributes="Bold"/>
-                            <Label Text="总营收" Grid.Column="1" FontAttributes="Bold" HorizontalOptions="End"/>
-                            <Label Text="总人次" Grid.Column="2" FontAttributes="Bold" HorizontalOptions="End"/>
+                            <Label Text="医生" FontAttributes="Bold" FontSize="16" />
+                            <Label Text="总营收" Grid.Column="1" FontSize="16" FontAttributes="Bold" HorizontalOptions="End"/>
+                            <Label Text="总人次" Grid.Column="2" FontSize="16" FontAttributes="Bold" HorizontalOptions="End"/>
                         </Grid>
                     </DataTemplate>
                 </CollectionView.HeaderTemplate>
@@ -41,23 +40,29 @@
                 <!-- 行模板 -->
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Grid ColumnDefinitions="*,110,70" Padding="0,4" ColumnSpacing="8">
+                        <Grid ColumnDefinitions="*,110,70" Padding="0,4" ColumnSpacing="8" MinimumHeightRequest="35">
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:DoctorViewModel}},Path=NavigateDetailCommand}"
+                                                      CommandParameter="{Binding .}" />
+                            </Grid.GestureRecognizers>
+
                             <!-- 医生 -->
-                            <Label Text="{Binding Owner}"                    />
+                            <Label Text="{Binding Owner}" FontSize="16" />
 
                             <!-- 金额 -->
                             <Label x:Name="RevenueLabel"
                                    Text="{Binding TotalRevenue, StringFormat='￥{0:N2}'}"
                                    Grid.Column="1"
-                                   HorizontalOptions="End"/>
+                                   HorizontalOptions="End"
+                                   FontSize="16" />
 
                             <!-- 人次（整数）-->
-                            <Label Text="{Binding TotalVisits, StringFormat='{0:N0}'}"
+                            <Label Text="{Binding TotalVisits, StringFormat='{0:N0}'}" 
                                    Grid.Column="2"
-                                   HorizontalOptions="End"/>
+                                   HorizontalOptions="End"
+                                   FontSize="16" />
                         </Grid>
 
-                       
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>

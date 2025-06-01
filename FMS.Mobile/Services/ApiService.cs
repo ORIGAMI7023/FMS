@@ -53,4 +53,17 @@ public class ApiService
         throw new HttpRequestException($"获取医生汇总失败: {response.StatusCode} - {response.ReasonPhrase}");
     }
 
+
+    public async Task<List<RevenueRecord>> QueryDoctorDetailAsync(string owner, DateOnly start, DateOnly end)
+    {
+        string url = $"/api/revenue/query?owner={owner}&start={start}&end={end}";
+        var response = await _httpClient.GetAsync(url);
+        if (response.IsSuccessStatusCode)
+        {
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonConvert.DeserializeObject<List<RevenueRecord>>(json) ?? new();
+        }
+        throw new HttpRequestException($"查询失败: {response.StatusCode}");
+    }
+
 }

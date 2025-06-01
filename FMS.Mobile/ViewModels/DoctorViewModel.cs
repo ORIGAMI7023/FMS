@@ -17,16 +17,16 @@ namespace FMS.Mobile.ViewModels
     {
         private readonly ApiService _api = new ApiService();
 
-        [ObservableProperty] private DateTime selectedMonth = DateTime.Today;
-
         [ObservableProperty] private int businessDays;
+        [ObservableProperty] private DateTime selectedMonth = DateTime.Today;
+        [ObservableProperty] private ObservableCollection<DoctorMonthlySummary.DoctorRow> doctors = new ObservableCollection<DoctorMonthlySummary.DoctorRow>();
 
         public DoctorViewModel()
         {
             SelectedMonth = AppState.LastHomeMonth ?? DateTime.Today;
 
-            RecordMonth();          
-            _ = LoadSummaryAsync(); 
+            RecordMonth();
+            _ = LoadSummaryAsync();
 
             WeakReferenceMessenger.Default.Register<MonthChangedMessage>(this, (r, m) =>
             {
@@ -56,10 +56,22 @@ namespace FMS.Mobile.ViewModels
             RecordMonth();
         }
 
-        [ObservableProperty]
-        private ObservableCollection<DoctorMonthlySummary.DoctorRow> doctors
-            = new ObservableCollection<DoctorMonthlySummary.DoctorRow>();
-
+        /// <summary>
+        /// 单击任意医生行，跳转到医生详情页
+        /// </summary>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        [RelayCommand]
+        private async Task NavigateDetail(DoctorMonthlySummary.DoctorRow? row)
+        {
+            if (row == null) return;
+            var param = new Dictionary<string, object>
+            {
+                ["owner"] = row.Owner,
+                ["month"] = SelectedMonth
+            };
+            await Shell.Current.GoToAsync("doctorDetail", param);
+        }
 
         private void RecordMonth()
         {

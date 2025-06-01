@@ -11,6 +11,7 @@ Controls\CustomCalendarView.xaml.cs
 Converters\ZeroToVisibleConverter.cs
 Models\DoctorMonthlySummary.cs
 Models\MonthlySummary.cs
+Models\RevenueRecord.cs
 Platforms\Android\AndroidManifest.xml
 Platforms\Android\MainActivity.cs
 Platforms\Android\MainApplication.cs
@@ -26,18 +27,19 @@ Resources\Styles\Colors.xaml
 Resources\Styles\Styles.xaml
 Services\ApiService.cs
 ViewModels\DashboardViewModel.cs
+ViewModels\DoctorDetailViewModel.cs
 ViewModels\DoctorViewModel.cs
 Views\DashboardPage.xaml
 Views\DashboardPage.xaml.cs
+Views\DoctorDetailPage.xaml
+Views\DoctorDetailPage.xaml.cs
 Views\DoctorPage.xaml
 Views\DoctorPage.xaml.cs
 Views\TrendPage.xaml
 Views\TrendPage.xaml.cs
 
 ### 文件内容
-      var ex = e.ExceptionObject as Exception;
-                Debug.WriteLine($"[全局异常]：{ex?.Message}");
-            };
+      };
 
 
             MainPage = new AppShell();
@@ -68,6 +70,8 @@ public partial class AppShell : Shell
     public AppShell()
     {
         InitializeComponent();
+        Routing.RegisterRoute("doctorDetail", typeof(Views.DoctorDetailPage));
+
     }
 }
 
@@ -161,6 +165,12 @@ namespace FMS.Mobile
 		<PackageReference Include="SkiaSharp.Views.Maui.Controls" Version="2.88.6" />
 		<PackageReference Include="CommunityToolkit.Maui" Version="5.2.0" />
 
+	</ItemGroup>
+
+	<ItemGroup>
+	  <MauiXaml Update="Views\DoctorDetailPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	</ItemGroup>
 
 </Project>
@@ -587,6 +597,26 @@ namespace FMS.Mobile.Models
         public decimal AverageDaily { get; set; }
         public Dictionary<DateOnly, decimal> DailyMap { get; set; } = new();
     }
+}
+
+
+# --- Models\RevenueRecord.cs ---
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace FMS.Mobile.Models
+{
+    public class RevenueRecord
+    {
+        public DateOnly Date { get; set; }
+        public string ItemType { get; set; } = "";
+        public decimal Value { get; set; }
+        public bool IsVisitCount { get; set; }
+    }
+
 }
 
 
@@ -1258,6 +1288,19 @@ public class ApiService
         throw new HttpRequestException($"ȡҽʧ: {response.StatusCode} - {response.ReasonPhrase}");
     }
 
+
+    public async Task<List<RevenueRecord>> QueryDoctorDetailAsync(string owner, DateOnly start, DateOnly end)
+    {
+        string url = $"/api/revenue/query?owner={owner}&start={start}&end={end}";
+        var response = await _httpClient.GetAsync(url);
+        if (response.IsSuccessStatusCode)
+        {
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonConvert.DeserializeObject<List<RevenueRecord>>(json) ?? new();
+        }
+        throw new HttpRequestException($"ѯʧ: {response.StatusCode}");
+    }
+
 }
 
 
@@ -1371,6 +1414,80 @@ namespace FMS.Mobile.ViewModels
 }
 
 
+# --- ViewModels\DoctorDetailViewModel.cs ---
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using FMS.Mobile.Services;
+using Microcharts;
+using SkiaSharp;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace FMS.Mobile.ViewModels
+{
+    public partial class DoctorDetailViewModel : ObservableObject
+    {
+        private readonly ApiService _apiService = new();
+
+        [ObservableProperty] private string owner = "";
+        [ObservableProperty] private DateTime selectedMonth = DateTime.Today;
+        [ObservableProperty] private Dictionary<DateOnly, decimal> revenueMap = new();
+        [ObservableProperty] private Dictionary<DateOnly, int> visitMap = new();
+
+
+        public DoctorDetailViewModel(string owner, DateTime month)
+        {
+            Owner = owner;
+            SelectedMonth = month;
+            LoadDetailAsync();
+
+
+        }
+
+        private async Task LoadDetailAsync()
+        {
+            try
+            {
+                var start = new DateOnly(SelectedMonth.Year, SelectedMonth.Month, 1);
+                var end = start.AddMonths(1);
+                var all = await _apiService.QueryDoctorDetailAsync(Owner, start, end);
+
+                RevenueMap = all
+                    .Where(r => !r.IsVisitCount)
+                    .GroupBy(r => r.Date)
+                    .ToDictionary(g => g.Key, g => g.Sum(r => r.ItemType == "退费" ? -r.Value : r.Value));
+
+                VisitMap = all
+                    .Where(r => r.IsVisitCount)
+                    .GroupBy(r => r.Date)
+                    .ToDictionary(g => g.Key, g => (int)g.Sum(r => r.Value));
+
+                var revSeries = revenueMap.OrderBy(k => k.Key)
+       .Select(k => new ChartEntry((float)k.Value) { Color = SKColors.SteelBlue });
+                var visitSeries = visitMap.OrderBy(k => k.Key)
+                    .Select(k => new ChartEntry(k.Value) { Color = SKColors.OrangeRed });
+
+                Chart = new MultiLineChart
+                {
+                    LineMode = LineMode.Straight,
+                    Series = new[] { revSeries.ToList(), visitSeries.ToList() },
+                    LabelOrientation = Orientation.Horizontal,
+                    ValueLabelOrientation = Orientation.Horizontal,
+                };
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[DoctorDetailVM] 加载失败: {ex.Message}");
+            }
+        }
+    }
+
+}
+
+
 # --- ViewModels\DoctorViewModel.cs ---
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -1399,8 +1516,8 @@ namespace FMS.Mobile.ViewModels
         {
             SelectedMonth = AppState.LastHomeMonth ?? DateTime.Today;
 
-            RecordMonth();          
-            _ = LoadSummaryAsync(); 
+            RecordMonth();
+            _ = LoadSummaryAsync();
 
             WeakReferenceMessenger.Default.Register<MonthChangedMessage>(this, (r, m) =>
             {
@@ -1428,6 +1545,18 @@ namespace FMS.Mobile.ViewModels
             SelectedMonth = SelectedMonth.AddMonths(1);
             _ = LoadSummaryAsync();
             RecordMonth();
+        }
+
+        [RelayCommand]
+        private async Task NavigateDetail(DoctorMonthlySummary.DoctorRow? row)
+        {
+            if (row == null) return;
+            var param = new Dictionary<string, object>
+            {
+                ["owner"] = row.Owner,
+                ["month"] = SelectedMonth
+            };
+            await Shell.Current.GoToAsync("doctorDetail", param);
         }
 
         [ObservableProperty]
@@ -1529,6 +1658,50 @@ public partial class DashboardPage : ContentPage
 }
 
 
+# --- Views\DoctorDetailPage.xaml ---
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FMS.Mobile.Views.DoctorDetailPage"
+             xmlns:chart="clr-namespace:Microcharts.Maui;assembly=Microcharts.Maui"
+             Title="DoctorDetailPage">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="12">
+
+            <Label Text="{Binding Owner}" FontSize="20" FontAttributes="Bold" />
+
+            <Label Text="{Binding SelectedMonth, StringFormat='{}{0:yyyy年M月}'}" FontSize="16" />
+
+            <chart:ChartView HeightRequest="300"
+                       Chart="{Binding Chart}" />
+
+            <!-- 可加月切换按钮等 -->
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
+
+# --- Views\DoctorDetailPage.xaml.cs ---
+using FMS.Mobile.ViewModels;
+
+namespace FMS.Mobile.Views;
+
+[QueryProperty(nameof(Owner), "owner")]
+[QueryProperty(nameof(MonthParam), "month")]
+public partial class DoctorDetailPage : ContentPage
+{
+    public string Owner { get; set; } = "";
+    public DateTime MonthParam { get; set; }
+
+    public DoctorDetailPage() { InitializeComponent(); }
+
+    protected override void OnNavigatedTo(NavigatedToEventArgs args)
+    {
+        base.OnNavigatedTo(args);
+        BindingContext = new DoctorDetailViewModel(Owner, MonthParam);
+    }
+}
+
 # --- Views\DoctorPage.xaml ---
 <?xml version="1.0" encoding="UTF-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
@@ -1574,6 +1747,11 @@ public partial class DashboardPage : ContentPage
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
                         <Grid ColumnDefinitions="*,110,70" Padding="0,4" ColumnSpacing="8">
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:DoctorViewModel}},
+                                                      Path=NavigateDetailCommand}" CommandParameter="{Binding .}" />
+                            </Grid.GestureRecognizers>
+
                             <!-- 医生 -->
                             <Label Text="{Binding Owner}"                    />
 
@@ -1589,7 +1767,7 @@ public partial class DashboardPage : ContentPage
                                    HorizontalOptions="End"/>
                         </Grid>
 
-                       
+
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>
