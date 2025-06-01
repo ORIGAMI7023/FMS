@@ -86,6 +86,10 @@ namespace FMS.Mobile
         /// 医生页最后一次选中的月份（1 号日期）；null 表示未设置
         /// </summary>
         public static DateTime? LastDoctorMonth { get; set; }
+
+        /// <summary>
+        /// 总览页最后一次选中的月份（1 号日期）；null 表示未设置
+        /// </summary>
         public static DateTime? LastHomeMonth { get; set; }
     }
 }
@@ -271,16 +275,7 @@ namespace FMS.Mobile.Controls
             get => (DateTime)GetValue(DisplayMonthProperty);
             set => SetValue(DisplayMonthProperty, value);
         }
-        private static void OnDisplayMonthChanged(BindableObject bindable, object oldValue, object newValue)
-        {
-            if (bindable is CustomCalendarView view && newValue is DateTime newMonth)
-            {
-                view._displayMonth = new DateTime(newMonth.Year, newMonth.Month, 1); // ✅ 赋值核心变量
-                view.MonthLabel.Text = newMonth.ToString("yyyy年M月");                // ✅ 更新标题
-                view._autoSelect = true;                                             // ✅ 自动选中第一天
-                view.BuildCalendar();                                                // ✅ 重建日历网格
-            }
-        }
+
 
         //当前选中的日期
         public DateTime SelectedDate
@@ -289,22 +284,7 @@ namespace FMS.Mobile.Controls
             set => SetValue(SelectedDateProperty, value);
         }
 
-        private static void OnSelectedDateChanged(BindableObject bindable, object oldV, object newV)
-        {
-            if (bindable is CustomCalendarView view && newV is DateTime dt)
-            {
-                if (view._displayMonth.Year != dt.Year || view._displayMonth.Month != dt.Month)
-                {
-                    view._displayMonth = new DateTime(dt.Year, dt.Month, 1);
-                    view.BuildCalendar();
-                }
-                else
-                {
-                    view.SelectedDate = dt;
-                    view.UpdateSelectionVisual();
-                }
-            }
-        }
+
 
         public Dictionary<DateOnly, decimal> DailyMap
         {
@@ -504,6 +484,45 @@ namespace FMS.Mobile.Controls
             if (bindable is CustomCalendarView calendar)
             {
                 calendar.BuildCalendar(); // 刷新 UI（或你自己的刷新逻辑）
+            }
+        }
+
+        private static void OnSelectedDateChanged(BindableObject bindable, object oldV, object newV)
+        {
+            if (bindable is CustomCalendarView view && newV is DateTime dt)
+            {
+                // 如果只是选同一个月，别重建整个网格
+                if (view._displayMonth.Year == dt.Year &&
+                    view._displayMonth.Month == dt.Month)
+                {
+                    view.UpdateSelectionVisual();
+                    return;
+                }
+
+                // 换月才真正重建
+                view._displayMonth = new DateTime(dt.Year, dt.Month, 1);
+                view.BuildCalendar();
+            }
+        }
+        /// <summary>
+        /// DisplayMonth修改时触发
+        /// </summary>
+        /// <param name="bindable"></param>
+        /// <param name="oldValue"></param>
+        /// <param name="newValue"></param>
+        private static void OnDisplayMonthChanged(BindableObject bindable, object oldValue, object newValue)
+        {
+            if (bindable is CustomCalendarView view && newValue is DateTime newMonth)
+            {
+                // 如果年/月没变，什么都不做，避免误触发
+                if (view._displayMonth.Year == newMonth.Year &&
+                    view._displayMonth.Month == newMonth.Month)
+                    return;
+
+                view._displayMonth = new DateTime(newMonth.Year, newMonth.Month, 1);
+                view.MonthLabel.Text = newMonth.ToString("yyyy年M月");
+                view._autoSelect = true;
+                view.BuildCalendar();
             }
         }
     }
@@ -1225,23 +1244,7 @@ public class ApiService
     }
 
     /// <summary>
-    /// ȡǰ·ҽӪջܡ
-    /// </summary>
-    public async Task<DoctorMonthlySummary?> GetDoctorSummaryCurrentMonthAsync()
-    {
-        HttpResponseMessage response = await _httpClient.GetAsync("/api/revenue/doctors/summary/currentMonth");
-        if (response.IsSuccessStatusCode)
-        {
-            string json = await response.Content.ReadAsStringAsync();
-            DoctorMonthlySummary? dto = JsonConvert.DeserializeObject<DoctorMonthlySummary>(json);
-            return dto;
-        }
-
-        throw new HttpRequestException($"ȡҽʧ: {response.StatusCode} - {response.ReasonPhrase}");
-    }
-
-    /// <summary>
-    /// 
+    /// ȡָ·ҽӪջܡ
     /// </summary>
     public async Task<DoctorMonthlySummary?> GetDoctorSummaryAsync(int year, int month)
     {
@@ -1394,12 +1397,10 @@ namespace FMS.Mobile.ViewModels
 
         public DoctorViewModel()
         {
+            SelectedMonth = AppState.LastHomeMonth ?? DateTime.Today;
 
-            // 构造时异步加载（不 await，避免阻塞 UI）
-            _ = LoadSummaryAsync();   // 默认当月
-            RecordMonth();
-            if (AppState.LastHomeMonth is DateTime m)
-                SelectedMonth = m;
+            RecordMonth();          
+            _ = LoadSummaryAsync(); 
 
             WeakReferenceMessenger.Default.Register<MonthChangedMessage>(this, (r, m) =>
             {
@@ -1407,6 +1408,7 @@ namespace FMS.Mobile.ViewModels
                 if (SelectedMonth.Year != monthFirst.Year || SelectedMonth.Month != monthFirst.Month)
                 {
                     SelectedMonth = monthFirst;
+                    RecordMonth();
                     _ = LoadSummaryAsync();
                 }
             });
@@ -1444,10 +1446,7 @@ namespace FMS.Mobile.ViewModels
         {
             try
             {
-                int y = SelectedMonth.Year;
-                int m = SelectedMonth.Month;
-
-                DoctorMonthlySummary? dto = await _api.GetDoctorSummaryAsync(y, m);
+                DoctorMonthlySummary? dto = await _api.GetDoctorSummaryAsync(SelectedMonth.Year, SelectedMonth.Month);
                 if (dto == null) return;
 
                 BusinessDays = dto.BusinessDays;

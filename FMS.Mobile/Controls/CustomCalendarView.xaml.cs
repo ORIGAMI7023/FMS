@@ -36,16 +36,7 @@ namespace FMS.Mobile.Controls
             get => (DateTime)GetValue(DisplayMonthProperty);
             set => SetValue(DisplayMonthProperty, value);
         }
-        private static void OnDisplayMonthChanged(BindableObject bindable, object oldValue, object newValue)
-        {
-            if (bindable is CustomCalendarView view && newValue is DateTime newMonth)
-            {
-                view._displayMonth = new DateTime(newMonth.Year, newMonth.Month, 1); // ✅ 赋值核心变量
-                view.MonthLabel.Text = newMonth.ToString("yyyy年M月");                // ✅ 更新标题
-                view._autoSelect = true;                                             // ✅ 自动选中第一天
-                view.BuildCalendar();                                                // ✅ 重建日历网格
-            }
-        }
+
 
         //当前选中的日期
         public DateTime SelectedDate
@@ -54,22 +45,7 @@ namespace FMS.Mobile.Controls
             set => SetValue(SelectedDateProperty, value);
         }
 
-        private static void OnSelectedDateChanged(BindableObject bindable, object oldV, object newV)
-        {
-            if (bindable is CustomCalendarView view && newV is DateTime dt)
-            {
-                if (view._displayMonth.Year != dt.Year || view._displayMonth.Month != dt.Month)
-                {
-                    view._displayMonth = new DateTime(dt.Year, dt.Month, 1);
-                    view.BuildCalendar();
-                }
-                else
-                {
-                    view.SelectedDate = dt;
-                    view.UpdateSelectionVisual();
-                }
-            }
-        }
+
 
         public Dictionary<DateOnly, decimal> DailyMap
         {
@@ -269,6 +245,45 @@ namespace FMS.Mobile.Controls
             if (bindable is CustomCalendarView calendar)
             {
                 calendar.BuildCalendar(); // 刷新 UI（或你自己的刷新逻辑）
+            }
+        }
+
+        private static void OnSelectedDateChanged(BindableObject bindable, object oldV, object newV)
+        {
+            if (bindable is CustomCalendarView view && newV is DateTime dt)
+            {
+                // 如果只是选同一个月，别重建整个网格
+                if (view._displayMonth.Year == dt.Year &&
+                    view._displayMonth.Month == dt.Month)
+                {
+                    view.UpdateSelectionVisual();
+                    return;
+                }
+
+                // 换月才真正重建
+                view._displayMonth = new DateTime(dt.Year, dt.Month, 1);
+                view.BuildCalendar();
+            }
+        }
+        /// <summary>
+        /// DisplayMonth修改时触发
+        /// </summary>
+        /// <param name="bindable"></param>
+        /// <param name="oldValue"></param>
+        /// <param name="newValue"></param>
+        private static void OnDisplayMonthChanged(BindableObject bindable, object oldValue, object newValue)
+        {
+            if (bindable is CustomCalendarView view && newValue is DateTime newMonth)
+            {
+                // 如果年/月没变，什么都不做，避免误触发
+                if (view._displayMonth.Year == newMonth.Year &&
+                    view._displayMonth.Month == newMonth.Month)
+                    return;
+
+                view._displayMonth = new DateTime(newMonth.Year, newMonth.Month, 1);
+                view.MonthLabel.Text = newMonth.ToString("yyyy年M月");
+                view._autoSelect = true;
+                view.BuildCalendar();
             }
         }
     }

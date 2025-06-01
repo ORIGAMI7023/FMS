@@ -25,8 +25,8 @@ namespace FMS.Mobile.ViewModels
         {
             SelectedMonth = AppState.LastHomeMonth ?? DateTime.Today;
 
-            RecordMonth();          // ✅ 放在真正的 SelectedMonth 设置之后
-            _ = LoadSummaryAsync(); // ✅ 然后加载数据
+            RecordMonth();          
+            _ = LoadSummaryAsync(); 
 
             WeakReferenceMessenger.Default.Register<MonthChangedMessage>(this, (r, m) =>
             {
@@ -34,12 +34,11 @@ namespace FMS.Mobile.ViewModels
                 if (SelectedMonth.Year != monthFirst.Year || SelectedMonth.Month != monthFirst.Month)
                 {
                     SelectedMonth = monthFirst;
-                    RecordMonth();              // ✅ 广播响应中也记得刷新
+                    RecordMonth();
                     _ = LoadSummaryAsync();
                 }
             });
         }
-
 
         [RelayCommand]
         private void PrevMonth()

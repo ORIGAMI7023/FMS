@@ -25,7 +25,7 @@ public class RevenueController : ControllerBase
         if (records == null || records.Count == 0)
             return BadRequest(new { message = "上传数据为空" });
 
-        // 标准化 Source
+        // 使用该接口上传的数据默认值定为 Source = "Admin"
         foreach (var record in records)
         {
             if (string.IsNullOrWhiteSpace(record.Source))
