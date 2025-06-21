@@ -1248,9 +1248,11 @@ public class ApiService
 #if WINDOWS
         _httpClient = new HttpClient { BaseAddress = new Uri("http://127.0.0.1:7050") };
 #elif ANDROID
-        _httpClient = new HttpClient { BaseAddress = new Uri("http://192.168.50.203:7050") };//̨ʽ
+        //_httpClient = new HttpClient { BaseAddress = new Uri("http://192.168.50.203:7050") };//̨ʽ
         //_httpClient = new HttpClient { BaseAddress = new Uri("http://192.168.90.114:7050") };//ʼǱ
         //_httpClient = new HttpClient { BaseAddress = new Uri("http://1.94.145.54:7050") };//
+        //_httpClient = new HttpClient { BaseAddress = new Uri("http://origami7023.cn:7050") };//
+        _httpClient = new HttpClient { BaseAddress = new Uri("https://origami7023.cn:7051") };//
 #else
         _httpClient = new HttpClient { BaseAddress = new Uri("https://localhost:7051") };
 #endif
@@ -1436,6 +1438,7 @@ namespace FMS.Mobile.ViewModels
         [ObservableProperty] private DateTime selectedMonth = DateTime.Today;
         [ObservableProperty] private Dictionary<DateOnly, decimal> revenueMap = new();
         [ObservableProperty] private Dictionary<DateOnly, int> visitMap = new();
+        [ObservableProperty] private Chart chartModel;   // ← 名称改为 ChartModel
 
 
         public DoctorDetailViewModel(string owner, DateTime month)
@@ -1451,29 +1454,43 @@ namespace FMS.Mobile.ViewModels
         {
             try
             {
-                var start = new DateOnly(SelectedMonth.Year, SelectedMonth.Month, 1);
-                var end = start.AddMonths(1);
-                var all = await _apiService.QueryDoctorDetailAsync(Owner, start, end);
+                // 1. 生成两条 ChartEntry 列表
+                var revEntries = RevenueMap.OrderBy(k => k.Key)
+                    .Select(k => new ChartEntry((float)k.Value)
+                    {
+                        ValueLabel = $"{k.Value:F0}",
+                        Color = SKColors.SteelBlue,
+                        Label = k.Key.Day.ToString()   // x 轴：日
+                    })
+                    .ToList();
 
-                RevenueMap = all
-                    .Where(r => !r.IsVisitCount)
-                    .GroupBy(r => r.Date)
-                    .ToDictionary(g => g.Key, g => g.Sum(r => r.ItemType == "退费" ? -r.Value : r.Value));
+                var visitEntries = VisitMap.OrderBy(k => k.Key)
+                    .Select(k => new ChartEntry(k.Value)
+                    {
+                        ValueLabel = k.Value.ToString(),
+                        Color = SKColors.OrangeRed,
+                        Label = k.Key.Day.ToString()
+                    })
+                    .ToList();
 
-                VisitMap = all
-                    .Where(r => r.IsVisitCount)
-                    .GroupBy(r => r.Date)
-                    .ToDictionary(g => g.Key, g => (int)g.Sum(r => r.Value));
+                // 2. 包装成 ChartSerie（0.9.5.x 提供的类型）
+                var revenueSerie = new ChartSerie
+                {
+                    Name = "营收",
+                    Entries = revEntries
+                };
 
-                var revSeries = revenueMap.OrderBy(k => k.Key)
-       .Select(k => new ChartEntry((float)k.Value) { Color = SKColors.SteelBlue });
-                var visitSeries = visitMap.OrderBy(k => k.Key)
-                    .Select(k => new ChartEntry(k.Value) { Color = SKColors.OrangeRed });
+                var visitSerie = new ChartSerie
+                {
+                    Name = "人次",
+                    Entries = visitEntries
+                };
 
-                Chart = new MultiLineChart
+                // 3. 构造 LineChart
+                ChartModel = new LineChart
                 {
                     LineMode = LineMode.Straight,
-                    Series = new[] { revSeries.ToList(), visitSeries.ToList() },
+                    Series = new[] { revenueSerie, visitSerie },
                     LabelOrientation = Orientation.Horizontal,
                     ValueLabelOrientation = Orientation.Horizontal,
                 };
@@ -1508,9 +1525,9 @@ namespace FMS.Mobile.ViewModels
     {
         private readonly ApiService _api = new ApiService();
 
-        [ObservableProperty] private DateTime selectedMonth = DateTime.Today;
-
         [ObservableProperty] private int businessDays;
+        [ObservableProperty] private DateTime selectedMonth = DateTime.Today;
+        [ObservableProperty] private ObservableCollection<DoctorMonthlySummary.DoctorRow> doctors = new ObservableCollection<DoctorMonthlySummary.DoctorRow>();
 
         public DoctorViewModel()
         {
@@ -1547,6 +1564,11 @@ namespace FMS.Mobile.ViewModels
             RecordMonth();
         }
 
+        /// <summary>
+        /// 单击任意医生行，跳转到医生详情页
+        /// </summary>
+        /// <param name="row"></param>
+        /// <returns></returns>
         [RelayCommand]
         private async Task NavigateDetail(DoctorMonthlySummary.DoctorRow? row)
         {
@@ -1558,11 +1580,6 @@ namespace FMS.Mobile.ViewModels
             };
             await Shell.Current.GoToAsync("doctorDetail", param);
         }
-
-        [ObservableProperty]
-        private ObservableCollection<DoctorMonthlySummary.DoctorRow> doctors
-            = new ObservableCollection<DoctorMonthlySummary.DoctorRow>();
-
 
         private void RecordMonth()
         {
@@ -1724,7 +1741,6 @@ public partial class DoctorDetailPage : ContentPage
                 <Button Text="＞" Command="{Binding NextMonthCommand}" Grid.Column="2" />
             </Grid>
 
-
             <!-- 本月营业天数 -->
             <Label Text="{Binding BusinessDays, StringFormat='本月营业天数：{0} 天'}"
                    FontSize="18"
@@ -1736,9 +1752,9 @@ public partial class DoctorDetailPage : ContentPage
                 <CollectionView.HeaderTemplate>
                     <DataTemplate>
                         <Grid ColumnDefinitions="*,110,70" Padding="0,4" ColumnSpacing="8">
-                            <Label Text="医生"            FontAttributes="Bold"/>
-                            <Label Text="总营收" Grid.Column="1" FontAttributes="Bold" HorizontalOptions="End"/>
-                            <Label Text="总人次" Grid.Column="2" FontAttributes="Bold" HorizontalOptions="End"/>
+                            <Label Text="医生" FontAttributes="Bold" FontSize="16" />
+                            <Label Text="总营收" Grid.Column="1" FontSize="16" FontAttributes="Bold" HorizontalOptions="End"/>
+                            <Label Text="总人次" Grid.Column="2" FontSize="16" FontAttributes="Bold" HorizontalOptions="End"/>
                         </Grid>
                     </DataTemplate>
                 </CollectionView.HeaderTemplate>
@@ -1746,27 +1762,28 @@ public partial class DoctorDetailPage : ContentPage
                 <!-- 行模板 -->
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Grid ColumnDefinitions="*,110,70" Padding="0,4" ColumnSpacing="8">
+                        <Grid ColumnDefinitions="*,110,70" Padding="0,4" ColumnSpacing="8" MinimumHeightRequest="35">
                             <Grid.GestureRecognizers>
-                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:DoctorViewModel}},
-                                                      Path=NavigateDetailCommand}" CommandParameter="{Binding .}" />
+                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:DoctorViewModel}},Path=NavigateDetailCommand}"
+                                                      CommandParameter="{Binding .}" />
                             </Grid.GestureRecognizers>
 
                             <!-- 医生 -->
-                            <Label Text="{Binding Owner}"                    />
+                            <Label Text="{Binding Owner}" FontSize="16" />
 
                             <!-- 金额 -->
                             <Label x:Name="RevenueLabel"
                                    Text="{Binding TotalRevenue, StringFormat='￥{0:N2}'}"
                                    Grid.Column="1"
-                                   HorizontalOptions="End"/>
+                                   HorizontalOptions="End"
+                                   FontSize="16" />
 
                             <!-- 人次（整数）-->
-                            <Label Text="{Binding TotalVisits, StringFormat='{0:N0}'}"
+                            <Label Text="{Binding TotalVisits, StringFormat='{0:N0}'}" 
                                    Grid.Column="2"
-                                   HorizontalOptions="End"/>
+                                   HorizontalOptions="End"
+                                   FontSize="16" />
                         </Grid>
-
 
                     </DataTemplate>
                 </CollectionView.ItemTemplate>

@@ -17,15 +17,15 @@ namespace FMS.Server
                 options.UseSqlite("Data Source=fms.db"));
 
             // 显式绑定监听端口
-            builder.WebHost.ConfigureKestrel(options =>
-            {
-                options.ListenAnyIP(7050); // HTTP
-                options.ListenAnyIP(7051, listenOptions =>
-                {
-                    listenOptions.UseHttps(); // 启用开发证书的 HTTPS
-                });
-            });
-
+            //builder.WebHost.ConfigureKestrel(options =>
+            //{
+            //    //options.ListenAnyIP(7050); // HTTP
+            //    options.ListenAnyIP(7051, listenOptions =>
+            //    {
+            //        listenOptions.UseHttps();
+            //    });
+            //});
+            //使用IIS托管，移除Kestrel监听配置
 
             var app = builder.Build();
 
@@ -37,7 +37,7 @@ namespace FMS.Server
             }
 
             // 中间件配置
-            //app.UseHttpsRedirection();
+            app.UseHttpsRedirection();
             app.UseAuthorization();
             app.MapControllers();
 

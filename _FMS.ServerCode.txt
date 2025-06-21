@@ -34,6 +34,12 @@ Models\Dtos\MonthlySummaryDto.cs
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="fms.db">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
 
 
@@ -117,15 +123,15 @@ namespace FMS.Server
                 options.UseSqlite("Data Source=fms.db"));
 
             // ʽ󶨼˿
-            builder.WebHost.ConfigureKestrel(options =>
-            {
-                options.ListenAnyIP(7050); // HTTP
-                options.ListenAnyIP(7051, listenOptions =>
-                {
-                    listenOptions.UseHttps(); // ÿ֤ HTTPS
-                });
-            });
-
+            //builder.WebHost.ConfigureKestrel(options =>
+            //{
+            //    //options.ListenAnyIP(7050); // HTTP
+            //    options.ListenAnyIP(7051, listenOptions =>
+            //    {
+            //        listenOptions.UseHttps();
+            //    });
+            //});
+            //ʹIISйܣƳKestrel
 
             var app = builder.Build();
 
@@ -137,7 +143,7 @@ namespace FMS.Server
             }
 
             // м
-            //app.UseHttpsRedirection();
+            app.UseHttpsRedirection();
             app.UseAuthorization();
             app.MapControllers();
 
